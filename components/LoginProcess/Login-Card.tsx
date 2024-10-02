@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { setCookie } from 'cookies-next';
 
+// import axios
+import axiosInstance from '@/helper/axiosInstance';
+
 // import MUI
 import {
     Grid,
@@ -10,6 +13,7 @@ import {
     Box,
     keyframes,
 } from '@mui/material';
+import { sign } from 'crypto';
 
 // create animation for switch
 const fadeIn = keyframes`
@@ -41,9 +45,13 @@ const Login_Card = () => {
 
     // import state of sign up
     const [signUpEmail, setSignUpEmail] = useState<string>('');
+    const [signUpPassword, setSignUpPassword] = useState<string>('');
+    const [signUpConfirmPassword, setSignUpConfirmPassword] = useState<string>('');
 
     // import state og sign up validation 
     const [signUpEmailError, setSignUpEmailError] = useState<string>('');
+    const [signUpPasswordError, setSignUpPasswordError] = useState<string>('');
+    const [signUpConfirmPasswordError, setSignUpConfirmPasswordError] = useState<string>('');
 
     // import state of log-in validation 
     const [emailError, setEmailError] = useState<string>('');
@@ -84,13 +92,42 @@ const Login_Card = () => {
 
     const handleSignUpSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (signUpEmail !== '') {
-            !isValidEmail(signUpEmail) ? setSignUpEmailError('Email is invalid!') : setSignUpEmailError('');
+
+        if (!signUpEmail || !signUpPassword || !signUpConfirmPassword) {
+            setSignUpEmailError(signUpEmail ? '' : 'Email is required!');
+            setSignUpPasswordError(signUpPassword ? '' : 'Password is required!');
+            setSignUpConfirmPasswordError(signUpConfirmPassword ? '' : 'Confirm password is required!');
         } else {
-            setSignUpEmailError('Email is required!');
+            const signUpEmailError = !isValidEmail(signUpEmail) ? 'Email is invalid!' : '';
+            const signUpPasswordError = signUpPassword.length > 8 ? 'Password should be no longer than 8 characters.' : '';
+            const signUpConfirmPasswordError = signUpConfirmPassword !== signUpPassword ? 'Passwords do not match.' : '';
+
+            if (signUpEmailError || signUpPasswordError || signUpConfirmPasswordError) {
+                setSignUpEmailError(signUpEmailError);
+                setSignUpPasswordError(signUpPasswordError);
+                setSignUpConfirmPasswordError(signUpConfirmPasswordError);
+            } else {
+                setSignUpEmailError("");
+                setSignUpPasswordError("");
+                setSignUpConfirmPasswordError("");
+                axiosInstance.post('/users/signup', {
+                    email: signUpEmail,
+                    password: signUpPassword
+                }).then((response) => {
+                    if (response.status === 201) {
+                        console.log(response);
+                        setCookie("token", signUpEmail);
+                        router.push('/flip');
+                    }
+                }).catch((error) => {
+                    console.log(error);
+                    if (error.response && error.response.status === 409) {
+                        setSignUpEmailError('Email address is already in use.');
+                    }
+                })
+            }
         }
     }
-
     const handleToggleForm = () => {
         setLoginStep((prev) => !prev);
     }
@@ -208,6 +245,64 @@ const Login_Card = () => {
                             error={!!signUpEmailError}
                             helperText={signUpEmailError}
                             sx={{ border: 'none', "& fieldset": { border: 'none' }, }}
+                        />
+                        <TextField
+                            placeholder='Password'
+                            value={signUpPassword}
+                            margin="normal"
+                            required
+                            fullWidth
+                            name="signup-password"
+                            type="signup-password"
+                            id="signup-password"
+                            autoComplete="signup-password"
+                            variant="outlined"
+                            onChange={(e) => setSignUpPassword(e.target.value)}
+                            error={!!signUpPasswordError}
+                            helperText={signUpPasswordError}
+                            InputProps={{
+                                sx: {
+                                    backgroundColor: '#f9f9f9',
+                                    borderRadius: '20px',
+                                },
+                            }}
+                            FormHelperTextProps={{
+                                sx: {
+                                    backgroundColor: 'transparent',
+                                    fontSize: '12pt'
+                                },
+                            }}
+                            sx={{ border: 'none', "& fieldset": { border: 'none' }, }}
+                            className='mt-3'
+                        />
+                        <TextField
+                            placeholder='Confirm Password'
+                            value={signUpConfirmPassword}
+                            margin="normal"
+                            required
+                            fullWidth
+                            name="signup-confirm-password"
+                            type="signup-confirm-password"
+                            id="signup-confirm-password"
+                            autoComplete="signup-confirm-password"
+                            variant="outlined"
+                            onChange={(e) => setSignUpConfirmPassword(e.target.value)}
+                            error={!!signUpConfirmPasswordError}
+                            helperText={signUpConfirmPasswordError}
+                            InputProps={{
+                                sx: {
+                                    backgroundColor: '#f9f9f9',
+                                    borderRadius: '20px',
+                                },
+                            }}
+                            FormHelperTextProps={{
+                                sx: {
+                                    backgroundColor: 'transparent',
+                                    fontSize: '12pt'
+                                },
+                            }}
+                            sx={{ border: 'none', "& fieldset": { border: 'none' }, }}
+                            className='mt-3'
                         />
                         <Grid container className='mt-5'>
                             <Grid item xs className='mt-4'>
