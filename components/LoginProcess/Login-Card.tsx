@@ -74,17 +74,36 @@ const Login_Card = () => {
             !isValidEmail(email) ? setEmailError('Email is invalid!') : setEmailError('');
             setPasswordError('Password is required!');
         } else if (password !== '' && email === '') {
-            password.length >= 8 ? setPasswordError('Password should be no longer than 8 characters.') : setPasswordError('');
+            password.length < 8 ? setPasswordError('Password must be more than 8 characters.') : setPasswordError('');
             setEmailError('Email is required!');
         } else if (email !== "" && password !== "") {
 
             if (!isValidEmail(email)) {
                 setEmailError('Email is invalid!');
-            } else if (password.length >= 8) {
-                setPasswordError('Password should be no longer than 8 characters.');
+            } else if (password.length < 8) {
+                setPasswordError('Password must be more than 8 characters.');
             } else {
-                setCookie("token", email);
-                router.push('/flip');
+                axiosInstance.post('/users/login', {
+                    email: email,
+                    password: password
+                }).then((response) => {
+                    if (response.status === 200) {
+                        setCookie("token", response.data.token);
+                        router.push('/flip');
+                    } else if (response.status === 401) {
+                        console.log('====================================');
+                        console.log("Password is incorrect!");
+                        console.log('====================================');
+                    } else if (response.status === 404) {
+                        console.log('====================================');
+                        console.log("The user does not exist!");
+                        console.log('====================================');
+                    }
+                }).catch((error) => {
+                    if (error.response && error.response.status === 409) {
+                        setSignUpEmailError('Email address is already in use.');
+                    }
+                })
             }
 
         }
@@ -99,7 +118,7 @@ const Login_Card = () => {
             setSignUpConfirmPasswordError(signUpConfirmPassword ? '' : 'Confirm password is required!');
         } else {
             const signUpEmailError = !isValidEmail(signUpEmail) ? 'Email is invalid!' : '';
-            const signUpPasswordError = signUpPassword.length < 8 ? 'Password should be no longer than 8 characters.' : '';
+            const signUpPasswordError = signUpPassword.length < 8 ? 'Password must be more than 8 characters.' : '';
             const signUpConfirmPasswordError = signUpConfirmPassword !== signUpPassword ? 'Passwords do not match.' : '';
 
             if (signUpEmailError || signUpPasswordError || signUpConfirmPasswordError) {
@@ -110,13 +129,13 @@ const Login_Card = () => {
                 setSignUpEmailError("");
                 setSignUpPasswordError("");
                 setSignUpConfirmPasswordError("");
+
                 axiosInstance.post('/users/signup', {
                     email: signUpEmail,
                     password: signUpPassword
                 }).then((response) => {
                     if (response.status === 201) {
-                        console.log(response);
-                        setCookie("token", signUpEmail);
+                        setCookie("token", response.data.token);
                         router.push('/flip');
                     }
                 }).catch((error) => {
