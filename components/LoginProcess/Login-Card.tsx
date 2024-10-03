@@ -99,7 +99,7 @@ const Login_Card = () => {
             setSignUpConfirmPasswordError(signUpConfirmPassword ? '' : 'Confirm password is required!');
         } else {
             const signUpEmailError = !isValidEmail(signUpEmail) ? 'Email is invalid!' : '';
-            const signUpPasswordError = signUpPassword.length > 8 ? 'Password should be no longer than 8 characters.' : '';
+            const signUpPasswordError = signUpPassword.length < 8 ? 'Password should be no longer than 8 characters.' : '';
             const signUpConfirmPasswordError = signUpConfirmPassword !== signUpPassword ? 'Passwords do not match.' : '';
 
             if (signUpEmailError || signUpPasswordError || signUpConfirmPasswordError) {
@@ -120,7 +120,6 @@ const Login_Card = () => {
                         router.push('/flip');
                     }
                 }).catch((error) => {
-                    console.log(error);
                     if (error.response && error.response.status === 409) {
                         setSignUpEmailError('Email address is already in use.');
                     }
@@ -312,7 +311,7 @@ const Login_Card = () => {
                                     className='main-button me-2'
                                     style={{ width: '80%' }}
                                 >
-                                    Sign up | Reset
+                                    Sign up
                                 </Button>
                             </Grid>
                         </Grid>
