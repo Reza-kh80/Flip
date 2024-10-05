@@ -13,6 +13,9 @@ import setting from '../public/Icons/setting.svg';
 import logout from '../public/Icons/logout.svg';
 import info from '../public/Icons/info.svg';
 
+// import axios
+import axiosInstance from "@/helper/axiosInstance";
+
 const SettingStructure = () => {
 
     const route = useRouter();
@@ -30,8 +33,16 @@ const SettingStructure = () => {
     }, []);
 
     const handleLogOut = () => {
-        deleteCookie('token');
-        route.push('/');
+        axiosInstance.post('/users/logout').then((res) => {
+            if (res.status === 200) {
+                deleteCookie('token');
+                route.push('/');
+            } else if (res.status = 404) {
+                alert('User not found!');
+            }
+        }).catch((err) => {
+            console.log(err);
+        });
     }
 
     return (
