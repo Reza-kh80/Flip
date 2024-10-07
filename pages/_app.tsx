@@ -1,51 +1,12 @@
-import { useEffect, useCallback } from "react";
-import { setCookie, getCookie, deleteCookie } from "cookies-next";
-import { useRouter } from "next/router";
 import "@/styles/globals.css";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import type { AppProps } from "next/app";
 import Head from "next/head";
-import axiosInstance from "@/helper/axiosInstance";
 
 // import Context
 import { CheckProvider } from "@/context/Exceptional";
 
 export default function App({ Component, pageProps }: AppProps) {
-
-  const { push } = useRouter();
-
-  const refreshToken = useCallback(async () => {
-    try {
-      const response = await axiosInstance.post('/users/refresh-token');
-      setCookie('token', response.data.token);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        if ('status' in error && typeof error.status === 'number') {
-          if (error.status === 401) {
-            console.log('Token expired');
-            deleteCookie('token');
-            push('/');
-          } else if (error.status === 500) {
-            console.log('Failed to refresh token:', error);
-            deleteCookie('token');
-            push('/');
-          }
-        }
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-
-    if (!getCookie('token')) {
-      console.log('No token found');
-    } else {
-
-      const intervalId = setInterval(refreshToken, 1 * 10 * 1000);
-
-      return () => clearInterval(intervalId);
-    }
-  }, [refreshToken, push]);
 
   return (
     <CheckProvider>

@@ -1,27 +1,62 @@
-import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { getCookie } from 'cookies-next';
+import axios from 'axios';
+import { getCookie, setCookie } from 'cookies-next';
 
-export const axiosInstance: AxiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-    timeout: 5000,
+const axiosInstance = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 
+// Request interceptor
 axiosInstance.interceptors.request.use(
-    (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-        config.headers.set('Authorization', `Bearer ${getCookie('token')}`);
+    (config) => {
+        const accessToken = getCookie('accessToken');
+        if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+        }
         return config;
     },
-    (error: AxiosError): Promise<AxiosError> => {
+    (error) => {
         return Promise.reject(error);
     }
 );
 
+// Response interceptor
 axiosInstance.interceptors.response.use(
-    (response: AxiosResponse): AxiosResponse => response,
-    (error: AxiosError): Promise<AxiosError> => {
-        if (error.response && error.response.status === 401) {
-            console.log('Unauthorized');
+    (response) => response,
+    async (error) => {
+        const originalRequest = error.config;
+
+        // If the error is 401 and we haven't retried yet
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            try {
+                const refreshToken = getCookie('refreshToken');
+
+                const response = await axios.post(`${axiosInstance.defaults.baseURL}/users/refresh-token`, {
+                    refreshToken
+                });
+
+                const { accessToken, refreshToken: newRefreshToken } = response.data;
+
+                setCookie('accessToken', accessToken);
+                setCookie('refreshToken', newRefreshToken);
+
+                axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+                return axiosInstance(originalRequest);
+            } catch (refreshError) {
+                // If refresh token fails, redirect to login
+                setCookie('accessToken', '');
+                setCookie('refreshToken', '');
+                window.location.href = '/';
+                return Promise.reject(refreshError);
+            }
         }
+
         return Promise.reject(error);
     }
 );

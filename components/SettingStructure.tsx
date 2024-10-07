@@ -35,7 +35,8 @@ const SettingStructure = () => {
     const handleLogOut = () => {
         axiosInstance.post('/users/logout').then((res) => {
             if (res.status === 200) {
-                deleteCookie('token');
+                deleteCookie('accessToken');
+                deleteCookie('refreshToken');
                 route.push('/');
             } else if (res.status = 404) {
                 alert('User not found!');

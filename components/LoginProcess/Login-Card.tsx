@@ -13,7 +13,6 @@ import {
     Box,
     keyframes,
 } from '@mui/material';
-import { sign } from 'crypto';
 
 // create animation for switch
 const fadeIn = keyframes`
@@ -65,87 +64,108 @@ const Login_Card = () => {
         return emailRegex.test(email);
     };
 
-    const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleLoginSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setEmailError('');
+        setPasswordError('');
+
         if (email === "" && password === "") {
             setEmailError('Email is required!');
             setPasswordError('Password is required!');
-        } else if (email !== '' && password === '') {
-            !isValidEmail(email) ? setEmailError('Email is invalid!') : setEmailError('');
-            setPasswordError('Password is required!');
-        } else if (password !== '' && email === '') {
-            password.length < 8 ? setPasswordError('Password must be more than 8 characters.') : setPasswordError('');
-            setEmailError('Email is required!');
-        } else if (email !== "" && password !== "") {
+            return;
+        }
 
-            if (!isValidEmail(email)) {
-                setEmailError('Email is invalid!');
-            } else if (password.length < 8) {
-                setPasswordError('Password must be more than 8 characters.');
-            } else {
-                axiosInstance.post('/users/login', {
-                    email: email,
-                    password: password
-                }).then((response) => {
-                    if (response.status === 200) {
-                        setCookie("token", response.data.token);
-                        router.push('/flip');
-                    } else if (response.status === 401) {
-                        console.log('====================================');
-                        console.log("Password is incorrect!");
-                        console.log('====================================');
-                    } else if (response.status === 404) {
-                        console.log('====================================');
-                        console.log("The user does not exist!");
-                        console.log('====================================');
-                    }
-                }).catch((error) => {
-                    if (error.response && error.response.status === 409) {
-                        setSignUpEmailError('Email address is already in use.');
-                    }
-                })
+        if (!isValidEmail(email)) {
+            setEmailError('Email is invalid!');
+            return;
+        }
+
+        if (password.length < 8) {
+            setPasswordError('Password must be more than 8 characters.');
+            return;
+        }
+
+        try {
+            const response = await axiosInstance.post('/users/login', {
+                email,
+                password
+            });
+
+            // Store both tokens
+            setCookie("accessToken", response.data.accessToken);
+            setCookie("refreshToken", response.data.refreshToken);
+
+            // Update axios instance to use the new access token
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
+
+            router.push('/flip');
+        } catch (error: any) {
+            if (error.response) {
+                switch (error.response.status) {
+                    case 401:
+                        setPasswordError('Password is incorrect!');
+                        break;
+                    case 404:
+                        setEmailError('User does not exist!');
+                        break;
+                    default:
+                        setEmailError('An error occurred. Please try again.');
+                }
             }
-
         }
     };
 
-    const handleSignUpSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSignUpSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setSignUpEmailError('');
+        setSignUpPasswordError('');
+        setSignUpConfirmPasswordError('');
 
         if (!signUpEmail || !signUpPassword || !signUpConfirmPassword) {
-            setSignUpEmailError(signUpEmail ? '' : 'Email is required!');
-            setSignUpPasswordError(signUpPassword ? '' : 'Password is required!');
-            setSignUpConfirmPasswordError(signUpConfirmPassword ? '' : 'Confirm password is required!');
-        } else {
-            const signUpEmailError = !isValidEmail(signUpEmail) ? 'Email is invalid!' : '';
-            const signUpPasswordError = signUpPassword.length < 8 ? 'Password must be more than 8 characters.' : '';
-            const signUpConfirmPasswordError = signUpConfirmPassword !== signUpPassword ? 'Passwords do not match.' : '';
+            setSignUpEmailError(!signUpEmail ? 'Email is required!' : '');
+            setSignUpPasswordError(!signUpPassword ? 'Password is required!' : '');
+            setSignUpConfirmPasswordError(!signUpConfirmPassword ? 'Confirm password is required!' : '');
+            return;
+        }
 
-            if (signUpEmailError || signUpPasswordError || signUpConfirmPasswordError) {
-                setSignUpEmailError(signUpEmailError);
-                setSignUpPasswordError(signUpPasswordError);
-                setSignUpConfirmPasswordError(signUpConfirmPasswordError);
+        if (!isValidEmail(signUpEmail)) {
+            setSignUpEmailError('Email is invalid!');
+            return;
+        }
+
+        if (signUpPassword.length < 8) {
+            setSignUpPasswordError('Password must be more than 8 characters.');
+            return;
+        }
+
+        if (signUpConfirmPassword !== signUpPassword) {
+            setSignUpConfirmPasswordError('Passwords do not match.');
+            return;
+        }
+
+        try {
+            const response = await axiosInstance.post('/users/signup', {
+                email: signUpEmail,
+                password: signUpPassword
+            });
+
+            // Store both tokens
+            setCookie("accessToken", response.data.accessToken);
+            setCookie("refreshToken", response.data.refreshToken);
+
+            // Update axios instance to use the new access token
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
+
+            router.push('/flip');
+        } catch (error: any) {
+            if (error.response && error.response.status === 409) {
+                setSignUpEmailError('Email address is already in use.');
             } else {
-                setSignUpEmailError("");
-                setSignUpPasswordError("");
-                setSignUpConfirmPasswordError("");
-
-                axiosInstance.post('/users/signup', {
-                    email: signUpEmail,
-                    password: signUpPassword
-                }).then((response) => {
-                    if (response.status === 201) {
-                        setCookie("token", response.data.token);
-                        router.push('/flip');
-                    }
-                }).catch((error) => {
-                    if (error.response && error.response.status === 409) {
-                        setSignUpEmailError('Email address is already in use.');
-                    }
-                })
+                setSignUpEmailError('An error occurred. Please try again.');
             }
         }
-    }
+    };
+
     const handleToggleForm = () => {
         setLoginStep((prev) => !prev);
     }
