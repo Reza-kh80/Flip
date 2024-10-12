@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { TextField, Box, Grid, Button } from '@mui/material';
+import axiosInstance from '@/helper/axiosInstance';
 
 const NewCardStyle = {
     width: '275px',
@@ -33,10 +34,18 @@ const AddCardsBoxPage = () => {
         event.preventDefault();
         const sanitizedTopic = topic.trim();
         setTopicError(sanitizedTopic ? '' : 'Name is required!');
+        if (sanitizedTopic) {
+            axiosInstance.post('/boxes/create', { name: sanitizedTopic }).then((res) => {
+                if (res.status === 200) {
+                    push('/flip');
+                } else if (res.status === 400) {
+                    console.log(res.data);
+                }
+            })
+        }
     }, [topic]);
 
     const backToHomePage = useCallback(() => push('/flip'), [push]);
-    const handleSaveChanges = useCallback(() => push('/flip'), [push]);
 
     return (
         <div style={{ height: `${height - 100}px` }}>
@@ -85,7 +94,7 @@ const AddCardsBoxPage = () => {
                             type="submit"
                             variant="contained"
                             className="save-style"
-                            onClick={handleSaveChanges}
+                        // onClick={handleSaveChanges}
                         >
                             Save
                         </Button>
