@@ -5,10 +5,17 @@ import { useRouter } from "next/router";
 import { Snackbar, Button } from '@mui/material';
 
 interface ListItemProps {
-    id: string | number;
-    label: string;
-    index: number;
-    number: number;
+    id: number;
+    user_id: number;
+    name: string;
+    language_code: string;
+    created_at: number;
+    updated_at: number | null;
+    deleted_at: number | null;
+    _count: {
+        cards: number;
+    };
+    index: number
     onCompleteRight: (id: string | number) => void;
     onCompleteLeft: (id: string | number) => void;
 }
@@ -17,7 +24,7 @@ interface UseSwipeOptions {
     completedThreshold?: number;
 }
 
-const ListItem = ({ id, label, number, index, onCompleteLeft, onCompleteRight }: ListItemProps) => {
+const ListItem = ({ id, name, _count, index, onCompleteLeft, onCompleteRight }: ListItemProps) => {
     const { push } = useRouter();
 
     // states of undo
@@ -225,9 +232,9 @@ const ListItem = ({ id, label, number, index, onCompleteLeft, onCompleteRight }:
         <Fragment>
             <div className="list-item" style={index !== 0 ? { margin: '-20px 0' } : { marginTop: '0' }} /*onClick={() => goToReviewPage(label)}*/>
                 <div className='card-global-page-home mt-4' ref={ref}>
-                    <h3 className='fw-bold'>{label}</h3>
+                    <h3 className='fw-bold'>{name}</h3>
                     <div className='d-flex flex-row justify-content-between align-items-center mt-3'>
-                        <span>{number} Cards</span>
+                        <span>{_count.cards} Cards</span>
                         <span className='border-3d'>3d</span>
                     </div>
                 </div>

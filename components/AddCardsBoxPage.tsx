@@ -35,13 +35,20 @@ const AddCardsBoxPage = () => {
         const sanitizedTopic = topic.trim();
         setTopicError(sanitizedTopic ? '' : 'Name is required!');
         if (sanitizedTopic) {
-            axiosInstance.post('/boxes/create', { name: sanitizedTopic }).then((res) => {
-                if (res.status === 200) {
-                    push('/flip');
-                } else if (res.status === 400) {
-                    console.log(res.data);
-                }
-            })
+            axiosInstance.post('/boxes/create', { name: sanitizedTopic })
+                .then((res) => {
+                    if (res.status === 201) {
+                        push('/flip');
+                    }
+                })
+                .catch((error) => {
+                    if (error.response && error.response.status === 400) {
+                        setTopicError('This box name already exists. Please choose a different name.');
+                    } else {
+                        console.error('An error occurred:', error);
+                        setTopicError('An error occurred. Please try again.');
+                    }
+                });
         }
     }, [topic]);
 
