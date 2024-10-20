@@ -117,7 +117,7 @@ const CardHomePage = (initialBoxes: BoxesPageProps) => {
     }, [addNewCardsBox, addFlipItOption]);
 
     useEffect(() => {
-        setFilteredOptions(card.filter(option =>
+        setFilteredOptions(card?.filter(option =>
             option.name.toLowerCase().includes((search || '').toLowerCase())
         ));
     }, [search, card]);
@@ -193,7 +193,7 @@ const CardHomePage = (initialBoxes: BoxesPageProps) => {
                 />
             </div>
             <div className='scrollable-div' style={{ overflowY: 'scroll', height: `${height - 381}px` }}>
-                {filteredOptions.map((item, index) => (
+                {filteredOptions?.map((item, index) => (
                     <ListItem
                         {...item}
                         key={item.id}

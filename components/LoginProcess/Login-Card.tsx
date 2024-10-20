@@ -91,6 +91,8 @@ const Login_Card = () => {
                 password
             });
 
+            console.log(response.data);
+            
             // Store both tokens
             setCookie("accessToken", response.data.accessToken);
             setCookie("refreshToken", response.data.refreshToken);

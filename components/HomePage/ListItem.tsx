@@ -4,6 +4,9 @@ import { useRouter } from "next/router";
 // import MUI
 import { Snackbar, Button } from '@mui/material';
 
+// import axiosInstance
+import axiosInstance from '@/helper/axiosInstance';
+
 interface ListItemProps {
     id: number;
     user_id: number;
@@ -207,6 +210,13 @@ const ListItem = ({ id, name, _count, index, onCompleteLeft, onCompleteRight }: 
                     timerRef.current = window.setTimeout(() => {
                         if (!undo) {
                             onCompleteLeft();
+                            axiosInstance.delete(`/boxes/delete-box/${id}`).then((res) => {
+                                if (res.status === 204) {
+                                    console.log(res.data.message);
+                                }
+                            }).catch((error) => {
+                                console.log(error);
+                            });
                         }
                         setOpenUndo(false);
                         timerRef.current = null;
