@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next';
 import { Container } from '@mui/material';
 import Layout from '@/components/Layout';
 import CardHomePage from '@/components/HomePage/CardHomePage';
-import { axiosInstanceSSR } from '@/helper/axiosInstanceSsr';
+import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
 
 interface Box {
     id: number;
