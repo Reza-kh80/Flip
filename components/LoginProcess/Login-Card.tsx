@@ -90,8 +90,6 @@ const Login_Card = () => {
                 email,
                 password
             });
-
-            console.log(response.data);
             
             // Store both tokens
             setCookie("accessToken", response.data.accessToken);

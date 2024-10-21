@@ -1,13 +1,18 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import Cookies from 'js-cookie';
-import { setCookie, getCookie } from 'cookies-next';
-import { GetServerSidePropsContext } from 'next';
+import { setCookie, getCookie, deleteCookie } from 'cookies-next';
+import { GetServerSidePropsContext, NextApiRequest, NextApiResponse } from 'next';
 
 const isServer = typeof window === 'undefined';
+const REFRESH_INTERVAL = (15 - 1) * 60 * 1000;
 
 interface RefreshTokenResponse {
     accessToken: string;
     refreshToken: string;
+}
+
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+    req?: NextApiRequest;
+    res?: NextApiResponse;
 }
 
 interface QueueItem {
@@ -17,7 +22,7 @@ interface QueueItem {
 
 const axiosInstance: AxiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
-    timeout: 25000,
+    timeout: 5000,
 });
 
 let isRefreshing = false;
@@ -36,10 +41,11 @@ const processQueue = (error: any, token: string | null = null): void => {
 };
 
 axiosInstance.interceptors.request.use(
-    async (config: InternalAxiosRequestConfig) => {
-        const accessToken = isServer
-            ? getCookie('accessToken', { req: config.req as any, res: config.res as any })
-            : Cookies.get('accessToken');
+    async (config: CustomAxiosRequestConfig) => {
+        const accessToken = getCookie('accessToken', {
+            req: config.req,
+            res: config.res
+        });
 
         if (accessToken) {
             config.headers = config.headers || {};
@@ -54,7 +60,7 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
     (response: AxiosResponse) => response,
     async (error: AxiosError) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+        const originalRequest = error.config as CustomAxiosRequestConfig & { _retry?: boolean };
 
         if (error.response?.status === 401 && !originalRequest._retry) {
             if (isRefreshing) {
@@ -73,9 +79,10 @@ axiosInstance.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
-            const refreshToken = isServer
-                ? getCookie('refreshToken', { req: originalRequest.req as any, res: originalRequest.res as any })
-                : Cookies.get('refreshToken');
+            const refreshToken = getCookie('refreshToken', {
+                req: originalRequest.req,
+                res: originalRequest.res
+            });
 
             try {
                 const { data } = await axios.post<RefreshTokenResponse>(
@@ -84,13 +91,11 @@ axiosInstance.interceptors.response.use(
                 );
                 const { accessToken, refreshToken: newRefreshToken } = data;
 
-                if (isServer) {
-                    setCookie('accessToken', accessToken, { req: originalRequest.req as any, res: originalRequest.res as any, maxAge: 30 });
-                    setCookie('refreshToken', newRefreshToken, { req: originalRequest.req as any, res: originalRequest.res as any, maxAge: 7 * 24 * 60 * 60 });
-                } else {
-                    Cookies.set('accessToken', accessToken, { expires: 30 / 86400 });
-                    Cookies.set('refreshToken', newRefreshToken, { expires: 7 });
-                }
+                setCookie('accessToken', accessToken, {
+                    req: originalRequest.req as any,
+                    res: originalRequest.res as any,
+                    maxAge: 15 * 60
+                });
 
                 axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
                 originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
@@ -100,14 +105,14 @@ axiosInstance.interceptors.response.use(
                 return axiosInstance(originalRequest);
             } catch (err) {
                 processQueue(err, null);
-                if (isServer) {
-                    setCookie('accessToken', '', { req: originalRequest.req as any, res: originalRequest.res as any, maxAge: 0 });
-                    setCookie('refreshToken', '', { req: originalRequest.req as any, res: originalRequest.res as any, maxAge: 0 });
-                } else {
-                    Cookies.remove('accessToken');
-                    Cookies.remove('refreshToken');
-                }
-                // Redirect to login or handle authentication failure
+                deleteCookie('accessToken', {
+                    req: originalRequest.req as any,
+                    res: originalRequest.res as any
+                });
+                deleteCookie('refreshToken', {
+                    req: originalRequest.req as any,
+                    res: originalRequest.res as any
+                });
                 return Promise.reject(err);
             } finally {
                 isRefreshing = false;
@@ -120,33 +125,38 @@ axiosInstance.interceptors.response.use(
 
 const setupRefreshTimer = (context?: GetServerSidePropsContext): void => {
     setInterval(async () => {
-        const accessToken = isServer
-            ? getCookie('accessToken', context)
-            : Cookies.get('accessToken');
+        const accessToken = getCookie('accessToken', context);
         if (accessToken) {
             try {
-                const { data } = await axiosInstance.post<RefreshTokenResponse>(`${axiosInstance.defaults.baseURL}/users/refresh-token`, {
-                    refreshToken: isServer
-                        ? getCookie('refreshToken', context)
-                        : Cookies.get('refreshToken'),
-                });
+                const { data } = await axiosInstance.post<RefreshTokenResponse>(
+                    `${axiosInstance.defaults.baseURL}/users/refresh-token`,
+                    {
+                        refreshToken: getCookie('refreshToken', context)
+                    }
+                );
                 const { accessToken: newAccessToken, refreshToken: newRefreshToken } = data;
 
-                if (isServer) {
-                    setCookie('accessToken', newAccessToken, { ...context, maxAge: 30 });
-                    setCookie('refreshToken', newRefreshToken, { ...context, maxAge: 7 * 24 * 60 * 60 });
-                } else {
-                    Cookies.set('accessToken', newAccessToken, { expires: 30 / 86400 });
-                    Cookies.set('refreshToken', newRefreshToken, { expires: 7 });
-                }
+                setCookie('accessToken', newAccessToken, {
+                    ...context,
+                    maxAge: 15 * 60
+                });
+
             } catch (error) {
-                console.error('Failed to refresh token:', error);
+                if (axios.isAxiosError(error)) {
+                    if (error.response?.status === 401) {
+                        deleteCookie('accessToken', context);
+                        deleteCookie('refreshToken', context);
+                        if (!isServer) {
+                            window.location.href = '/';
+                        }
+                    }
+                    console.error('Failed to refresh token:', error);
+                }
             }
         }
-    }, 20000); // 20 seconds interval (10 seconds before expiry)
+    }, REFRESH_INTERVAL);
 };
 
-// Call this function when your app initializes
 if (!isServer) {
     setupRefreshTimer();
 }
