@@ -1,12 +1,27 @@
 import React, { Fragment, useEffect, useState } from "react";
+import { CreateAlertFunction } from "@/types/common";
 import { deleteCookie } from "cookies-next";
 import { useRouter } from "next/router";
+import Image from "next/image";
 import Link from "next/link";
 
 // import MUI
 import { Grid, Button } from "@mui/material";
 
-const SettingStructure = () => {
+// import SVG
+import profile from '../public/Icons/profile.svg';
+import setting from '../public/Icons/setting.svg';
+import logout from '../public/Icons/logout.svg';
+import info from '../public/Icons/info.svg';
+
+// import axios
+import axiosInstance from "@/helper/axiosInstance";
+
+interface ComponentProps {
+    createAlert: CreateAlertFunction;
+}
+
+const SettingStructure = ({ createAlert }: ComponentProps) => {
 
     const route = useRouter();
 
@@ -23,67 +38,42 @@ const SettingStructure = () => {
     }, []);
 
     const handleLogOut = () => {
-        deleteCookie('token');
-        route.push('/');
+        axiosInstance.post('/users/logout').then((res) => {
+            if (res.status === 200) {
+                deleteCookie('accessToken');
+                deleteCookie('refreshToken');
+                createAlert(res.data.message + '_success', 5);
+                route.push('/');
+            } else if (res.status = 404) {
+                createAlert("User not found!_error", 5);
+            }
+        }).catch((err) => {
+            createAlert('An error occurred. Please try again._error', 5);
+        });
     }
 
     return (
         <Fragment>
             <div style={{ height: `${height - 200}px` }} className='scrollable-div'>
                 <Link href='#' className="account-style d-felx mt-5 flex-row align-items-center justify-content-center">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path fillRule="evenodd" clipRule="evenodd" d="M11.9847 15.3462C8.11713 15.3462 4.81427 15.931 4.81427 18.2729C4.81427 20.6148 8.09617 21.2205 11.9847 21.2205C15.8524 21.2205 19.1543 20.6348 19.1543 18.2938C19.1543 15.9529 15.8733 15.3462 11.9847 15.3462Z" stroke="#133266" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path fillRule="evenodd" clipRule="evenodd" d="M11.9848 12.0059C14.5229 12.0059 16.58 9.94782 16.58 7.40972C16.58 4.87163 14.5229 2.81448 11.9848 2.81448C9.44667 2.81448 7.38858 4.87163 7.38858 7.40972C7.38001 9.93925 9.42382 11.9973 11.9524 12.0059H11.9848Z" stroke="#133266" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <Image priority src={profile} width={24} height={24} alt="profile" />
                     <span className="ms-2">Account</span>
                 </Link>
                 <Link href='#' className="preferences-style mt-5 d-felx flex-row align-items-center justify-content-center">
-                    <svg width="24" height="24" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <mask id="mask0_124_299" style={{ maskType: "luminance" }} maskUnits="userSpaceOnUse" x="1" y="1" width="14" height="15">
-                            <path fillRule="evenodd" clipRule="evenodd" d="M1.83331 1.83368H14.6899V15.6477H1.83331V1.83368Z" fill="white" />
-                        </mask>
-                        <g mask="url(#mask0_124_299)">
-                            <path fillRule="evenodd" clipRule="evenodd" d="M5.30147 12.127C5.45413 12.127 5.6068 12.1463 5.75613 12.1863C6.2068 12.3077 6.59813 12.609 6.83013 13.0137C6.9808 13.2677 7.06413 13.5643 7.0668 13.867C7.0668 14.3003 7.4148 14.6477 7.8428 14.6477H8.67813C9.10413 14.6477 9.45213 14.3023 9.45413 13.8763C9.45147 13.4057 9.63547 12.9583 9.97213 12.6217C10.3041 12.2897 10.7681 12.0903 11.2321 12.1037C11.5361 12.111 11.8288 12.193 12.0868 12.3397C12.4581 12.5523 12.9321 12.4257 13.1468 12.059L13.5895 11.321C13.6881 11.151 13.7168 10.9377 13.6641 10.741C13.6121 10.5443 13.4815 10.3737 13.3055 10.273C12.8935 10.0357 12.5995 9.65301 12.4775 9.19435C12.3568 8.74435 12.4228 8.25301 12.6581 7.84835C12.8115 7.58168 13.0361 7.35701 13.3055 7.20235C13.6668 6.99101 13.7935 6.51835 13.5835 6.15035C13.5748 6.13568 13.5668 6.12035 13.5601 6.10435L13.1695 5.42701C12.9568 5.05701 12.4835 4.92968 12.1121 5.14101C11.7108 5.37835 11.2335 5.44635 10.7748 5.32568C10.3168 5.20701 9.9328 4.91701 9.69347 4.50768C9.54013 4.25168 9.4568 3.95368 9.45413 3.65035C9.46013 3.42235 9.38013 3.21768 9.2348 3.06768C9.09013 2.91835 8.8868 2.83368 8.67813 2.83368H7.8428C7.63613 2.83368 7.4428 2.91435 7.2968 3.05968C7.15147 3.20568 7.07213 3.39968 7.07347 3.60635C7.05947 4.58101 6.2628 5.36568 5.29813 5.36568C4.9888 5.36235 4.6908 5.27901 4.43213 5.12435C4.0688 4.91768 3.59413 5.04501 3.38147 5.41501L2.93013 6.15701C2.72347 6.51568 2.85013 6.98968 3.21813 7.20368C3.76413 7.51968 4.1048 8.10901 4.1048 8.74101C4.1048 9.37301 3.76413 9.96168 3.2168 10.2783C2.8508 10.4903 2.72413 10.9617 2.93613 11.3283L3.3568 12.0537C3.4608 12.241 3.6308 12.3763 3.82747 12.4317C4.02347 12.4863 4.23947 12.463 4.41947 12.363C4.68413 12.2077 4.99213 12.127 5.30147 12.127ZM8.67813 15.6477H7.8428C6.86346 15.6477 6.0668 14.8517 6.0668 13.8723C6.06547 13.7517 6.0308 13.6263 5.96613 13.5177C5.86147 13.335 5.69213 13.2043 5.4968 13.1523C5.3028 13.1003 5.09013 13.129 4.91547 13.2303C4.4968 13.4637 4.00413 13.5203 3.55347 13.3937C3.10347 13.2663 2.7148 12.957 2.4868 12.547L2.07013 11.829C1.5828 10.9837 1.8728 9.90035 2.7168 9.41235C2.95613 9.27435 3.1048 9.01701 3.1048 8.74101C3.1048 8.46501 2.95613 8.20701 2.7168 8.06901C1.87213 7.57835 1.5828 6.49235 2.06947 5.64701L2.52147 4.90501C3.00213 4.06901 4.0888 3.77435 4.93613 4.26101C5.05147 4.32968 5.1768 4.36435 5.30413 4.36568C5.71947 4.36568 6.0668 4.02301 6.07347 3.60168C6.0708 3.13701 6.25413 2.69101 6.58813 2.35435C6.92347 2.01835 7.3688 1.83368 7.8428 1.83368H8.67813C9.15547 1.83368 9.61947 2.02968 9.95213 2.37035C10.2841 2.71301 10.4675 3.18301 10.4535 3.65968C10.4548 3.76701 10.4901 3.89101 10.5541 3.99968C10.6601 4.17968 10.8275 4.30635 11.0261 4.35835C11.2248 4.40768 11.4328 4.38101 11.6095 4.27635C12.4628 3.78901 13.5488 4.08101 14.0361 4.92768L14.4515 5.64701C14.4621 5.66635 14.4715 5.68501 14.4795 5.70435C14.9208 6.53835 14.6261 7.58835 13.8061 8.06768C13.6868 8.13635 13.5901 8.23235 13.5235 8.34835C13.4201 8.52768 13.3915 8.74101 13.4435 8.93701C13.4968 9.13701 13.6241 9.30301 13.8035 9.40568C14.2081 9.63835 14.5101 10.0303 14.6308 10.483C14.7515 10.935 14.6855 11.4257 14.4501 11.8303L14.0075 12.5677C13.5201 13.405 12.4341 13.695 11.5895 13.207C11.4768 13.1423 11.3468 13.107 11.2175 13.1037H11.2135C11.0208 13.1037 10.8228 13.1857 10.6788 13.329C10.5328 13.475 10.4528 13.6697 10.4541 13.8763C10.4495 14.8557 9.6528 15.6477 8.67813 15.6477Z" fill="#133266" />
-                        </g>
-                        <path fillRule="evenodd" clipRule="evenodd" d="M8.26338 7.48309C7.57004 7.48309 7.00604 8.04776 7.00604 8.74109C7.00604 9.43443 7.57004 9.99776 8.26338 9.99776C8.95671 9.99776 9.52071 9.43443 9.52071 8.74109C9.52071 8.04776 8.95671 7.48309 8.26338 7.48309ZM8.26338 10.9978C7.01871 10.9978 6.00604 9.98576 6.00604 8.74109C6.00604 7.49643 7.01871 6.48309 8.26338 6.48309C9.50804 6.48309 10.5207 7.49643 10.5207 8.74109C10.5207 9.98576 9.50804 10.9978 8.26338 10.9978Z" fill="#133266" />
-                    </svg>
+                    <Image priority src={setting} width={24} height={24} alt="setting" />
                     <span className="ms-2">Preferences</span>
                 </Link>
 
                 <Grid container spacing={1} display='flex' alignItems='center' justifyContent='space-between' flexDirection='row'>
                     <Grid item xs={6}>
                         <Button onClick={handleLogOut} className="logout-style mt-5 d-felx flex-row align-items-center justify-content-center">
-                            <svg width="24" height="24" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" clipRule="evenodd" d="M7.54622 15.1666H4.28889C2.65956 15.1666 1.33356 13.8406 1.33356 12.21V4.79065C1.33356 3.15998 2.65956 1.83331 4.28889 1.83331H7.53889C9.16956 1.83331 10.4962 3.15998 10.4962 4.79065V5.41198C10.4962 5.68798 10.2722 5.91198 9.99622 5.91198C9.72022 5.91198 9.49622 5.68798 9.49622 5.41198V4.79065C9.49622 3.71065 8.61822 2.83331 7.53889 2.83331H4.28889C3.21089 2.83331 2.33356 3.71065 2.33356 4.79065V12.21C2.33356 13.2893 3.21089 14.1666 4.28889 14.1666H7.54622C8.62089 14.1666 9.49622 13.292 9.49622 12.2173V11.5886C9.49622 11.3126 9.72022 11.0886 9.99622 11.0886C10.2722 11.0886 10.4962 11.3126 10.4962 11.5886V12.2173C10.4962 13.844 9.17222 15.1666 7.54622 15.1666Z" fill="#133266" />
-                                <mask id="mask0_124_334" style={{ maskType: "luminance" }} maskUnits="userSpaceOnUse" x="5" y="8" width="11" height="1">
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M5.99744 8H15.0247V9H5.99744V8Z" fill="white" />
-                                </mask>
-                                <g mask="url(#mask0_124_334)">
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M14.5248 9H6.49744C6.22144 9 5.99744 8.776 5.99744 8.5C5.99744 8.224 6.22144 8 6.49744 8H14.5248C14.8008 8 15.0248 8.224 15.0248 8.5C15.0248 8.776 14.8008 9 14.5248 9Z" fill="#133266" />
-                                </g>
-                                <mask id="mask1_124_334" style={{ maskType: "luminance" }} maskUnits="userSpaceOnUse" x="12" y="6" width="4" height="5">
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M12.0731 6.05682H15.0247V10.944H12.0731V6.05682Z" fill="white" />
-                                </mask>
-                                <g mask="url(#mask1_124_334)">
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M12.573 10.944C12.445 10.944 12.3163 10.8953 12.219 10.7967C12.0243 10.6007 12.025 10.2847 12.2203 10.09L13.8163 8.49999L12.2203 6.91066C12.025 6.71599 12.0236 6.39999 12.219 6.20399C12.4136 6.00799 12.7296 6.00799 12.9256 6.20266L14.8776 8.14599C14.9723 8.23932 15.025 8.36732 15.025 8.49999C15.025 8.63266 14.9723 8.76066 14.8776 8.85399L12.9256 10.798C12.8283 10.8953 12.7003 10.944 12.573 10.944Z" fill="#133266" />
-                                </g>
-                            </svg>
-
+                            <Image priority src={logout} width={24} height={24} alt="logout" />
                             <span className="ms-2">LogOut</span>
                         </Button>
                     </Grid>
                     <Grid item xs={6}>
                         <Link href='#' className="info-style mt-5 d-felx flex-row align-items-center justify-content-center">
-                            <svg width="24" height="24" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <mask id="mask0_124_352" style={{ maskType: "luminance" }} maskUnits="userSpaceOnUse" x="1" y="1" width="14" height="15">
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M1.33331 1.83331H14.6666V15.1666H1.33331V1.83331Z" fill="white" />
-                                </mask>
-                                <g mask="url(#mask0_124_352)">
-                                    <path fillRule="evenodd" clipRule="evenodd" d="M5.10931 2.83331C3.42331 2.83331 2.33331 3.98865 2.33331 5.77731V11.2226C2.33331 13.0113 3.42331 14.1666 5.10931 14.1666H10.888C12.576 14.1666 13.6666 13.0113 13.6666 11.2226V5.77731C13.6666 3.98865 12.576 2.83331 10.8893 2.83331H5.10931ZM10.888 15.1666H5.10931C2.85065 15.1666 1.33331 13.5813 1.33331 11.2226V5.77731C1.33331 3.41865 2.85065 1.83331 5.10931 1.83331H10.8893C13.1486 1.83331 14.6666 3.41865 14.6666 5.77731V11.2226C14.6666 13.5813 13.1486 15.1666 10.888 15.1666Z" fill="#133266" />
-                                </g>
-                                <path fillRule="evenodd" clipRule="evenodd" d="M7.99597 11.6667C7.71997 11.6667 7.49597 11.4427 7.49597 11.1667V8.5C7.49597 8.224 7.71997 8 7.99597 8C8.27197 8 8.49597 8.224 8.49597 8.5V11.1667C8.49597 11.4427 8.27197 11.6667 7.99597 11.6667Z" fill="#133266" />
-                                <path fillRule="evenodd" clipRule="evenodd" d="M7.99922 6.63607C7.63056 6.63607 7.32922 6.33807 7.32922 5.9694C7.32922 5.60073 7.62456 5.30273 7.99256 5.30273H7.99922C8.36789 5.30273 8.66589 5.60073 8.66589 5.9694C8.66589 6.33807 8.36789 6.63607 7.99922 6.63607Z" fill="#133266" />
-                            </svg>
+                            <Image priority src={info} width={24} height={24} alt="info" />
                             <span className="ms-2">Info</span>
                         </Link>
                     </Grid>

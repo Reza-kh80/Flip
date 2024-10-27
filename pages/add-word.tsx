@@ -1,5 +1,7 @@
-import React from 'react';
+import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
+import { CreateAlertFunction } from '@/types/common';
 import { GetServerSideProps } from 'next';
+import React from 'react';
 
 // import MUI Components
 import { Container } from '@mui/material';
@@ -10,17 +12,26 @@ import Layout from '@/components/Layout';
 // import components
 import AddWordsPage from '@/components/AddWordsPage';
 
-interface Props {
-    data: {
-        cardsBox: {
-            label: string,
-            number: number,
-            id: number
-        }[],
+interface Box {
+    id: number;
+    user_id: number;
+    name: string;
+    language_code: string;
+    created_at: number;
+    updated_at: number | null;
+    deleted_at: number | null;
+    _count: {
+        cards: number;
     };
 }
 
-const AddWord = ({ data }: Props) => {
+// Combined props interface for the main component
+interface AddWordProps {
+    initialBoxes: Box[];
+    createAlert: CreateAlertFunction;
+}
+
+const AddWord = ({ initialBoxes, createAlert }: AddWordProps) => {
     return (
         <Layout title='Add Word'>
             <main className='bg-edit'>
@@ -30,60 +41,39 @@ const AddWord = ({ data }: Props) => {
                             Add Word
                         </h2>
                     </div>
-                    <AddWordsPage cardsBox={data.cardsBox} />
+                    <AddWordsPage initialBoxes={initialBoxes} createAlert={createAlert} />
                 </Container>
             </main>
         </Layout>
     )
 }
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getServerSideProps: GetServerSideProps<{ initialBoxes: Box[] }> = async (context) => {
+    const axiosInstance = axiosInstanceSSR(context as any);
 
-    const cardsBox = [
-        {
-            label: 'Common Verbs',
-            number: 253,
-            id: 1
-        },
-        {
-            label: 'Dommon Verbs',
-            number: 300,
-            id: 2
-        },
-        {
-            label: 'Xommon Verbs',
-            number: 265,
-            id: 3
-        },
-        {
-            label: 'Aommon Verbs',
-            number: 265,
-            id: 4
-        },
-        {
-            label: 'Wommon Verbs',
-            number: 265,
-            id: 5
-        },
-        {
-            label: 'Rommon Verbs',
-            number: 265,
-            id: 6
-        },
-        {
-            label: 'Tommon Verbs',
-            number: 265,
-            id: 7
+    try {
+        const response = await axiosInstance.get<Box[]>('/boxes/get-all');
+        return {
+            props: {
+                initialBoxes: response.data,
+            },
+        };
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            return {
+                redirect: {
+                    destination: '/',
+                    permanent: false,
+                },
+            };
         }
-    ]
 
-    return {
-        props: {
-            data: {
-                cardsBox,
-            }
-        }
-    };
+        return {
+            props: {
+                initialBoxes: [],
+            },
+        };
+    }
 };
 
 export default AddWord;

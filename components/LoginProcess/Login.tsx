@@ -1,3 +1,4 @@
+import { CreateAlertFunction } from '@/types/common';
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 
@@ -11,6 +12,11 @@ import {
     Typography,
     Container,
 } from '@mui/material';
+
+interface ComponentProps {
+    createAlert: CreateAlertFunction;
+}
+
 
 function Copyright() {
     return (
@@ -39,7 +45,7 @@ function Copyright() {
     );
 }
 
-const Login = () => {
+const Login = ({ createAlert }: ComponentProps) => {
     // spinner
     const [spinner, setSpinner] = useState<boolean>(true);
 
@@ -78,7 +84,7 @@ const Login = () => {
                         </Box >
                         :
                         <Container component="main" maxWidth="xs" className='design-login'>
-                            <Login_Card />
+                            <Login_Card createAlert={createAlert} />
                             <Copyright />
                         </Container>
                 }

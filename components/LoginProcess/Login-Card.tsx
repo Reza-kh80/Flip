@@ -1,6 +1,14 @@
+import { CreateAlertFunction } from "@/types/common";
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { setCookie } from 'cookies-next';
+
+// import axios
+import axiosInstance from '@/helper/axiosInstance';
+
+interface ComponentProps {
+    createAlert: CreateAlertFunction;
+}
 
 // import MUI
 import {
@@ -32,7 +40,7 @@ const fadeOut = keyframes`
     }
 `;
 
-const Login_Card = () => {
+const Login_Card = ({ createAlert }: ComponentProps) => {
     const router = useRouter();
 
     // import state of log-in    
@@ -41,9 +49,13 @@ const Login_Card = () => {
 
     // import state of sign up
     const [signUpEmail, setSignUpEmail] = useState<string>('');
+    const [signUpPassword, setSignUpPassword] = useState<string>('');
+    const [signUpConfirmPassword, setSignUpConfirmPassword] = useState<string>('');
 
     // import state og sign up validation 
     const [signUpEmailError, setSignUpEmailError] = useState<string>('');
+    const [signUpPasswordError, setSignUpPasswordError] = useState<string>('');
+    const [signUpConfirmPasswordError, setSignUpConfirmPasswordError] = useState<string>('');
 
     // import state of log-in validation 
     const [emailError, setEmailError] = useState<string>('');
@@ -57,39 +69,106 @@ const Login_Card = () => {
         return emailRegex.test(email);
     };
 
-    const handleLoginSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleLoginSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        setEmailError('');
+        setPasswordError('');
+
         if (email === "" && password === "") {
             setEmailError('Email is required!');
             setPasswordError('Password is required!');
-        } else if (email !== '' && password === '') {
-            !isValidEmail(email) ? setEmailError('Email is invalid!') : setEmailError('');
-            setPasswordError('Password is required!');
-        } else if (password !== '' && email === '') {
-            password.length >= 8 ? setPasswordError('Password should be no longer than 8 characters.') : setPasswordError('');
-            setEmailError('Email is required!');
-        } else if (email !== "" && password !== "") {
+            return;
+        }
 
-            if (!isValidEmail(email)) {
-                setEmailError('Email is invalid!');
-            } else if (password.length >= 8) {
-                setPasswordError('Password should be no longer than 8 characters.');
-            } else {
-                setCookie("token", email);
-                router.push('/flip');
+        if (!isValidEmail(email)) {
+            setEmailError('Email is invalid!');
+            return;
+        }
+
+        if (password.length < 8) {
+            setPasswordError('Password must be more than 8 characters.');
+            return;
+        }
+
+        try {
+            const response = await axiosInstance.post('/users/login', {
+                email,
+                password
+            });
+
+            // Store both tokens
+            setCookie("accessToken", response.data.accessToken);
+            setCookie("refreshToken", response.data.refreshToken);
+
+            // Update axios instance to use the new access token
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
+            createAlert(response.data.message + '_success', 3)
+            router.push('/flip');
+        } catch (error: any) {
+            if (error.response) {
+                switch (error.response.status) {
+                    case 401:
+                        createAlert('Password is incorrect!_error', 3)
+                    case 404:
+                        createAlert('User does not exist!_error', 3)
+                        break;
+                    default:
+                        createAlert('An error occurred. Please try again._error', 3)
+                }
             }
-
         }
     };
 
-    const handleSignUpSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSignUpSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (signUpEmail !== '') {
-            !isValidEmail(signUpEmail) ? setSignUpEmailError('Email is invalid!') : setSignUpEmailError('');
-        } else {
-            setSignUpEmailError('Email is required!');
+        setSignUpEmailError('');
+        setSignUpPasswordError('');
+        setSignUpConfirmPasswordError('');
+
+        if (!signUpEmail || !signUpPassword || !signUpConfirmPassword) {
+            setSignUpEmailError(!signUpEmail ? 'Email is required!' : '');
+            setSignUpPasswordError(!signUpPassword ? 'Password is required!' : '');
+            setSignUpConfirmPasswordError(!signUpConfirmPassword ? 'Confirm password is required!' : '');
+            return;
         }
-    }
+
+        if (!isValidEmail(signUpEmail)) {
+            setSignUpEmailError('Email is invalid!');
+            return;
+        }
+
+        if (signUpPassword.length < 8) {
+            setSignUpPasswordError('Password must be more than 8 characters.');
+            return;
+        }
+
+        if (signUpConfirmPassword !== signUpPassword) {
+            setSignUpConfirmPasswordError('Passwords do not match.');
+            return;
+        }
+
+        try {
+            const response = await axiosInstance.post('/users/signup', {
+                email: signUpEmail,
+                password: signUpPassword
+            });
+
+            // Store both tokens
+            setCookie("accessToken", response.data.accessToken);
+            setCookie("refreshToken", response.data.refreshToken);
+
+            // Update axios instance to use the new access token
+            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
+            createAlert(response.data.message + '_success', 3)
+            router.push('/flip');
+        } catch (error: any) {
+            if (error.response && error.response.status === 409) {
+                createAlert('Email address is already in use._error', 3);
+            } else {
+                createAlert('An error occurred. Please try again._error', 3);
+            }
+        }
+    };
 
     const handleToggleForm = () => {
         setLoginStep((prev) => !prev);
@@ -209,6 +288,64 @@ const Login_Card = () => {
                             helperText={signUpEmailError}
                             sx={{ border: 'none', "& fieldset": { border: 'none' }, }}
                         />
+                        <TextField
+                            placeholder='Password'
+                            value={signUpPassword}
+                            margin="normal"
+                            required
+                            fullWidth
+                            name="signup-password"
+                            type="signup-password"
+                            id="signup-password"
+                            autoComplete="signup-password"
+                            variant="outlined"
+                            onChange={(e) => setSignUpPassword(e.target.value)}
+                            error={!!signUpPasswordError}
+                            helperText={signUpPasswordError}
+                            InputProps={{
+                                sx: {
+                                    backgroundColor: '#f9f9f9',
+                                    borderRadius: '20px',
+                                },
+                            }}
+                            FormHelperTextProps={{
+                                sx: {
+                                    backgroundColor: 'transparent',
+                                    fontSize: '12pt'
+                                },
+                            }}
+                            sx={{ border: 'none', "& fieldset": { border: 'none' }, }}
+                            className='mt-3'
+                        />
+                        <TextField
+                            placeholder='Confirm Password'
+                            value={signUpConfirmPassword}
+                            margin="normal"
+                            required
+                            fullWidth
+                            name="signup-confirm-password"
+                            type="signup-confirm-password"
+                            id="signup-confirm-password"
+                            autoComplete="signup-confirm-password"
+                            variant="outlined"
+                            onChange={(e) => setSignUpConfirmPassword(e.target.value)}
+                            error={!!signUpConfirmPasswordError}
+                            helperText={signUpConfirmPasswordError}
+                            InputProps={{
+                                sx: {
+                                    backgroundColor: '#f9f9f9',
+                                    borderRadius: '20px',
+                                },
+                            }}
+                            FormHelperTextProps={{
+                                sx: {
+                                    backgroundColor: 'transparent',
+                                    fontSize: '12pt'
+                                },
+                            }}
+                            sx={{ border: 'none', "& fieldset": { border: 'none' }, }}
+                            className='mt-3'
+                        />
                         <Grid container className='mt-5'>
                             <Grid item xs className='mt-4'>
                                 <Button
@@ -217,7 +354,7 @@ const Login_Card = () => {
                                     className='main-button me-2'
                                     style={{ width: '80%' }}
                                 >
-                                    Sign up | Reset
+                                    Sign up
                                 </Button>
                             </Grid>
                         </Grid>
@@ -234,6 +371,7 @@ const Login_Card = () => {
                     </Button>
                 </Grid>
             </Grid>
+
         </Box>
     )
 }

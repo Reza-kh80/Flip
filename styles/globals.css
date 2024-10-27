@@ -193,7 +193,7 @@ h2 {
 }
 
 .delete__design {
-    background-color: #fe6464;
+    background-color: #EFC1C4;
     text-align: end;
     padding: 10px;
     width: 100%;
@@ -202,6 +202,13 @@ h2 {
     height: 60%;
     line-height: 65px;
     font-size: large;
+    color: #133266;
+    border-top-width: 2px;
+    border-bottom-width: 4px;
+    border-right: 2px;
+    border-left: 2px;
+    border-style: solid;
+    border-color: var(--Indigo, #133266);
 }
 
 .delete__design__btn {
@@ -217,7 +224,7 @@ h2 {
 }
 
 .fast__design {
-    background-color: #3fb899;
+    background-color: #A5DAE3;
     text-align: start;
     padding: 10px;
     width: 100%;
@@ -226,6 +233,13 @@ h2 {
     height: 60%;
     line-height: 65px;
     font-size: large;
+    color: #133266;
+    border-top-width: 2px;
+    border-bottom-width: 4px;
+    border-right: 2px;
+    border-left: 2px;
+    border-style: solid;
+    border-color: var(--Indigo, #133266);
 }
 
 .action__design {

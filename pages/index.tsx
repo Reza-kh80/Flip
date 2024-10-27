@@ -1,25 +1,28 @@
 import React, { useState, Fragment, useEffect } from "react";
+import { CreateAlertFunction } from "@/types/common";
 import { getCookie } from "cookies-next";
-
-// import MUI
-import { Container } from "@mui/material";
 
 // import components
 import Login from "@/components/LoginProcess/Login";
 import Layout from "@/components/Layout";
 
-export default function Home() {
+interface ComponentProps {
+  createAlert: CreateAlertFunction;
+}
+
+
+export default function Home({ createAlert }: ComponentProps) {
   const [token, setToken] = useState<boolean>();
 
   useEffect(() => {
-    getCookie('token') === undefined ? setToken(false) : setToken(true);
+    getCookie('accessToken') === undefined ? setToken(false) : setToken(true);
   }, [])
 
   return (
     <Fragment>
       {
         !token ? (
-          <Login />
+          <Login createAlert={createAlert} />
         )
           : (
             <Layout title="Home">

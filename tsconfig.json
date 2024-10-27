@@ -32,7 +32,7 @@
     "**/*.ts",
     "**/*.tsx",
     "global.d.ts"
-  ],
+, "helper/Toaster.tsx"  ],
   "exclude": [
     "node_modules"
   ]

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { GetServerSideProps, GetServerSidePropsContext } from 'next';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
+import { GetServerSideProps, GetServerSidePropsContext } from 'next';
 
 // import MUI Components
 import { Container } from '@mui/material';
@@ -14,6 +15,8 @@ import { clickChecking } from '@/context/Exceptional';
 // import components
 import CardViewPage from '@/components/CardViewPage';
 
+// import SVG
+import swap from '@/public/Icons/swap.svg';
 interface Props {
     data: {
         data: [],
@@ -44,12 +47,7 @@ const CardView = ({ data }: Props) => {
                             <h2 style={{ color: "white", cursor: 'pointer' }}>Done</h2>
                         </span>
                         <span className='cursor-pointer'>
-                            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M22.4527 26.8857V8.72864" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M27.8895 21.4242L22.4524 26.8864L17.0154 21.4242" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M9.21462 5.11053V23.2676" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                <path d="M3.77783 10.572L9.21487 5.1098L14.6519 10.572" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
+                            <Image priority src={swap} alt='swap' width={32} height={32} />
                         </span>
                     </div>
                     <div className='d-flex flex-row align-items-center justify-content-center mt-4'>
