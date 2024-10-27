@@ -1,9 +1,14 @@
+import { CreateAlertFunction } from "@/types/common";
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { setCookie } from 'cookies-next';
 
 // import axios
 import axiosInstance from '@/helper/axiosInstance';
+
+interface ComponentProps {
+    createAlert: CreateAlertFunction;
+}
 
 // import MUI
 import {
@@ -35,7 +40,7 @@ const fadeOut = keyframes`
     }
 `;
 
-const Login_Card = () => {
+const Login_Card = ({ createAlert }: ComponentProps) => {
     const router = useRouter();
 
     // import state of log-in    
@@ -90,26 +95,25 @@ const Login_Card = () => {
                 email,
                 password
             });
-            
+
             // Store both tokens
             setCookie("accessToken", response.data.accessToken);
             setCookie("refreshToken", response.data.refreshToken);
 
             // Update axios instance to use the new access token
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
-
+            createAlert(response.data.message + '_success', 3)
             router.push('/flip');
         } catch (error: any) {
             if (error.response) {
                 switch (error.response.status) {
                     case 401:
-                        setPasswordError('Password is incorrect!');
-                        break;
+                        createAlert('Password is incorrect!_error', 3)
                     case 404:
-                        setEmailError('User does not exist!');
+                        createAlert('User does not exist!_error', 3)
                         break;
                     default:
-                        setEmailError('An error occurred. Please try again.');
+                        createAlert('An error occurred. Please try again._error', 3)
                 }
             }
         }
@@ -155,13 +159,13 @@ const Login_Card = () => {
 
             // Update axios instance to use the new access token
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
-
+            createAlert(response.data.message + '_success', 3)
             router.push('/flip');
         } catch (error: any) {
             if (error.response && error.response.status === 409) {
-                setSignUpEmailError('Email address is already in use.');
+                createAlert('Email address is already in use._error', 3);
             } else {
-                setSignUpEmailError('An error occurred. Please try again.');
+                createAlert('An error occurred. Please try again._error', 3);
             }
         }
     };
@@ -367,6 +371,7 @@ const Login_Card = () => {
                     </Button>
                 </Grid>
             </Grid>
+
         </Box>
     )
 }

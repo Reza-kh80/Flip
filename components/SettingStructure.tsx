@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
+import { CreateAlertFunction } from "@/types/common";
 import { deleteCookie } from "cookies-next";
 import { useRouter } from "next/router";
 import Image from "next/image";
@@ -16,7 +17,11 @@ import info from '../public/Icons/info.svg';
 // import axios
 import axiosInstance from "@/helper/axiosInstance";
 
-const SettingStructure = () => {
+interface ComponentProps {
+    createAlert: CreateAlertFunction;
+}
+
+const SettingStructure = ({ createAlert }: ComponentProps) => {
 
     const route = useRouter();
 
@@ -37,12 +42,13 @@ const SettingStructure = () => {
             if (res.status === 200) {
                 deleteCookie('accessToken');
                 deleteCookie('refreshToken');
+                createAlert(res.data.message + '_success', 5);
                 route.push('/');
             } else if (res.status = 404) {
-                alert('User not found!');
+                createAlert("User not found!_error", 5);
             }
         }).catch((err) => {
-            console.log(err);
+            createAlert('An error occurred. Please try again._error', 5);
         });
     }
 

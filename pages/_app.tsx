@@ -1,12 +1,35 @@
-import "@/styles/globals.css";
+import { CreateAlertFunction } from "@/types/common";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { useState, useMemo } from 'react';
 import type { AppProps } from "next/app";
+import Toaster from '@/helper/Toaster';
+import "@/styles/globals.css";
 import Head from "next/head";
 
 // import Context
 import { CheckProvider } from "@/context/Exceptional";
 
-export default function App({ Component, pageProps }: AppProps) {
+// Extend AppProps to include createAlert
+type CustomAppProps = AppProps & {
+  Component: AppProps["Component"] & {
+    createAlert?: CreateAlertFunction;
+  };
+};
+
+export default function App({ Component, pageProps }: CustomAppProps) {
+  const [alertState, setAlertState] = useState<string>('');
+
+  const createAlert = (alertType: string, destroyAfterInSeconds: number) => {
+    setAlertState(alertType);
+    setTimeout(() => setAlertState(''), destroyAfterInSeconds * 1000);
+  }
+
+  const alertElement = useMemo(() => (
+    <Toaster
+      message={alertState.split('_')[0]}
+      severity={alertState.split('_')[1]}
+    />
+  ), [alertState]);
 
   return (
     <CheckProvider>
@@ -45,43 +68,62 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta property="og:site_name" content="My awesome PWA app" />
         <meta property="og:url" content="https://yourdomain.com" />
         <meta property="og:image" content="/icons/og.png" />
-        <link
-          rel="apple-touch-startup-image"
-          href="/images/apple_splash_2048.png"
-          sizes="2048x2732"
-        />
-        <link
-          rel="apple-touch-startup-image"
-          href="/images/apple_splash_1668.png"
-          sizes="1668x2224"
-        />
-        <link
-          rel="apple-touch-startup-image"
-          href="/images/apple_splash_1536.png"
-          sizes="1536x2048"
-        />
-        <link
-          rel="apple-touch-startup-image"
-          href="/images/apple_splash_1125.png"
-          sizes="1125x2436"
-        />
-        <link
-          rel="apple-touch-startup-image"
-          href="/images/apple_splash_1242.png"
-          sizes="1242x2208"
-        />
-        <link
-          rel="apple-touch-startup-image"
-          href="/images/apple_splash_750.png"
-          sizes="750x1334"
-        />
-        <link
-          rel="apple-touch-startup-image"
-          href="/images/apple_splash_640.png"
-          sizes="640x1136"
-        />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        {/* Apple Splash Screens */}
+        {[
+          { size: 2048, dim: '2048x2732' },
+          { size: 1668, dim: '1668x2224' },
+          { size: 1536, dim: '1536x2048' },
+          { size: 1125, dim: '1125x2436' },
+          { size: 1242, dim: '1242x2208' },
+          { size: 750, dim: '750x1334' },
+          { size: 640, dim: '640x1136' }
+        ].map(({ size, dim }) => (
+          <link
+            key={size}
+            rel="apple-touch-startup-image"
+            href={`/images/apple_splash_${size}.png`}
+            sizes={dim}
+          />
+        ))}
       </Head>
-      <Component {...pageProps} />
+      {alertState.length ? alertElement : ''}
+      <Component createAlert={createAlert} {...pageProps} />
     </CheckProvider>
   )
 }

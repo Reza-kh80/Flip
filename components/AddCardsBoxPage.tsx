@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
 import { TextField, Box, Grid, Button } from '@mui/material';
+import { CreateAlertFunction } from '@/types/common';
 import axiosInstance from '@/helper/axiosInstance';
+import { useRouter } from 'next/router';
 
 const NewCardStyle = {
     width: '275px',
@@ -17,7 +18,11 @@ const NewCardStyle = {
     p: 2,
 };
 
-const AddCardsBoxPage = () => {
+interface ComponentProps {
+    createAlert: CreateAlertFunction;
+}
+
+const AddCardsBoxPage = ({ createAlert }: ComponentProps) => {
     const { push } = useRouter();
     const [topic, setTopic] = useState('');
     const [topicError, setTopicError] = useState('');
@@ -38,15 +43,16 @@ const AddCardsBoxPage = () => {
             axiosInstance.post('/boxes/create', { name: sanitizedTopic })
                 .then((res) => {
                     if (res.status === 201) {
+                        createAlert(res.data.message + '_success', 5);
                         push('/flip');
                     }
                 })
                 .catch((error) => {
                     if (error.response && error.response.status === 400) {
-                        setTopicError('This box name already exists. Please choose a different name.');
+                        createAlert('This box name already exists. Please choose a different name._error', 5);
                     } else {
                         console.error('An error occurred:', error);
-                        setTopicError('An error occurred. Please try again.');
+                        createAlert('An error occurred. Please try again._error', 5);
                     }
                 });
         }

@@ -1,5 +1,6 @@
-import React from 'react';
 import { useRouter } from 'next/router';
+import { CreateAlertFunction } from "@/types/common";
+import React from 'react';
 import Image from 'next/image';
 
 // import MUI Components
@@ -12,9 +13,13 @@ import Layout from '@/components/Layout';
 import AddCardsBoxPage from '@/components/AddCardsBoxPage';
 
 // import SVG
-import leftSquare from '@/public/Icons/left-square.svg'
+import leftSquare from '@/public/Icons/left-square.svg';
 
-const AddCardBox = () => {
+interface ComponentProps {
+    createAlert: CreateAlertFunction;
+}
+
+const AddCardBox = ({ createAlert }: ComponentProps) => {
     const { push } = useRouter();
 
     const backToHomePage = () => {
@@ -33,7 +38,7 @@ const AddCardBox = () => {
                             Add Cards Box
                         </h2>
                     </div>
-                    <AddCardsBoxPage />
+                    <AddCardsBoxPage createAlert={createAlert} />
                 </Container>
             </main>
         </Layout>
