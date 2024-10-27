@@ -69,41 +69,6 @@ export default function App({ Component, pageProps }: CustomAppProps) {
         <meta property="og:url" content="https://yourdomain.com" />
         <meta property="og:image" content="/icons/og.png" />
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         {/* Apple Splash Screens */}
         {[
           { size: 2048, dim: '2048x2732' },

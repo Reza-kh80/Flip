@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { CreateAlertFunction } from '@/types/common';
+import axiosInstance from '@/helper/axiosInstance';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 
@@ -15,15 +17,25 @@ import {
 // import SVG
 import downCircle from '../public/Icons/down-circle.svg';
 
-interface Props {
-    cardsBox: {
-        label: string,
-        number: number,
-        id: number
-    }[],
+interface Box {
+    id: number;
+    user_id: number;
+    name: string;
+    language_code: string;
+    created_at: number;
+    updated_at: number | null;
+    deleted_at: number | null;
+    _count: {
+        cards: number;
+    };
 }
 
-const AddWordsPage = ({ cardsBox }: Props) => {
+interface AddWordsPageProps {
+    initialBoxes: Box[];
+    createAlert: CreateAlertFunction;
+}
+
+const AddWordsPage = ({ initialBoxes, createAlert }: AddWordsPageProps) => {
     const { reload } = useRouter();
     const [formData, setFormData] = useState({
         label: '',
@@ -69,7 +81,19 @@ const AddWordsPage = ({ cardsBox }: Props) => {
     const handleSaveChanges = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (validateForm()) {
-            reload();
+            axiosInstance.post('/card/create', {
+                box_id: formData.cardBox,
+                front: formData.label,
+                back: {
+                    definition: formData.description,
+                    example: formData.example
+                },
+                type: formData.type,
+            }).then(() => {
+                createAlert("Word added successfully!_success", 5);
+            }).catch((error) => {
+                createAlert('An error occurred. Please try again._error', 5);
+            })
         }
     };
 
@@ -160,7 +184,7 @@ const AddWordsPage = ({ cardsBox }: Props) => {
                     )}
                 >
                     <MenuItem value=""><em>Select Tag</em></MenuItem>
-                    {['Verb', 'Noun', 'Adjective', 'Adverb'].map(item => (
+                    {['NOUN', 'ADJ', 'ADV', 'VERB'].map(item => (
                         <MenuItem key={item} value={item}>{item}</MenuItem>
                     ))}
                 </Select>
@@ -261,8 +285,8 @@ const AddWordsPage = ({ cardsBox }: Props) => {
                     )}
                 >
                     <MenuItem value=""><em>Search for Box Cards</em></MenuItem>
-                    {cardsBox.map((item) => (
-                        <MenuItem key={item.id} value={item.label}>{item.label}</MenuItem>
+                    {initialBoxes.map((item) => (
+                        <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>
                     ))}
                 </Select>
                 {errors.cardBox && (
@@ -281,5 +305,4 @@ const AddWordsPage = ({ cardsBox }: Props) => {
         </Box>
     );
 };
-
 export default AddWordsPage;
