@@ -15,7 +15,7 @@ export default function Home({ createAlert }: ComponentProps) {
   const [token, setToken] = useState<boolean>();
 
   useEffect(() => {
-    getCookie('token') === undefined ? setToken(false) : setToken(true);
+    getCookie('accessToken') === undefined ? setToken(false) : setToken(true);
   }, [])
 
   return (
