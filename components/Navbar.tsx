@@ -4,10 +4,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 // import SVG
-import category from '@/public/icons/category.svg';
-import search from '@/public/icons/search.svg';
-import filter from '@/public/icons/filter.svg';
-import plus from '@/public/icons/plus.svg';
+import category from '@/public/Icons/filter.svg';
+import search from '@/public/Icons/search.svg';
+import filter from '@/public/Icons/filter.svg';
+import plus from '@/public/Icons/plus.svg';
 
 const Navbar = () => {
     const { asPath } = useRouter();
