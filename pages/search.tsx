@@ -1,5 +1,7 @@
 import React from 'react';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
+import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
+import { CreateAlertFunction } from '@/types/common';
 
 // import MUI Components
 import { Container } from '@mui/material';
@@ -8,13 +10,33 @@ import { Container } from '@mui/material';
 import Layout from '@/components/Layout';
 import CardReviewPage from '@/components/ReviewPage/CardReviewPage';
 
-interface Props {
-    data: {
-        data: []
+interface Card {
+    id: number;
+    box_id: number;
+    front: string;
+    back: {
+        example: string,
+        definition: string
     };
+    type: string;
+    voice_url: string,
+    is_favorite: boolean,
+    srs_interval: number,
+    ease_factor: string,
+    due_date: number,
+    created_at: number,
+    updated_at: number | null,
+    deleted_at: number | null
 }
 
-const Search = ({ data }: Props) => {
+interface Props {
+    data: {
+        initialBoxes: Card[];
+    };
+    createAlert: CreateAlertFunction;
+}
+
+const Search = ({ data, createAlert }: Props) => {
     return (
         <Layout title='Search'>
             <main className='bg-search'>
@@ -22,59 +44,44 @@ const Search = ({ data }: Props) => {
                     <h2 className='fw-bold' style={{ color: '#133266', fontSize: '35pt' }}>
                         Search
                     </h2>
-                    <CardReviewPage cards={data.data} />
+                    <CardReviewPage cards={data.initialBoxes} createAlert={createAlert} />
                 </Container>
             </main>
         </Layout>
     )
 }
 
-export const getServerSideProps: GetServerSideProps = async () => {
-    const data = [
-        {
-            label: 'Eat',
-            type: 'Verb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 1
-        },
-        {
-            label: 'Snack',
-            type: 'Noun',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 2
-        },
-        {
-            label: 'Hello',
-            type: 'Adverb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 3
-        },
-        {
-            label: 'Honey',
-            type: 'Adjective',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 4
-        },
-        {
-            label: 'Pure',
-            type: 'Verb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 5
-        },
-    ]
+export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
+    const axiosInstance = axiosInstanceSSR(context as any);
 
-    return {
-        props: {
-            data: {
-                data
-            }
+    try {
+        const response = await axiosInstance.get<Card[]>(`/card/get-all-cards`);
+        return {
+            props: {
+                data: {
+                    initialBoxes: response.data
+                }
+            },
+        };
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            return {
+                redirect: {
+                    destination: '/',
+                    permanent: false,
+                },
+            };
         }
-    };
+
+        return {
+            props: {
+                data: {
+                    initialBoxes: []
+                }
+            }
+        };
+    }
 };
+
 
 export default Search;

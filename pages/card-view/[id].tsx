@@ -97,7 +97,7 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
     const title = url_details[url_details.length - 1];
 
     try {
-        const response = await axiosInstance.get<Card[]>(`/card/get-cards/${title}`);
+        const response = await axiosInstance.get<Card[]>(`/card/due/${title}`);
         return {
             props: {
                 data: {
@@ -108,7 +108,6 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
         };
     } catch (error: any) {
         if (error.response && error.response.status === 401) {
-            // Redirect to login page if unauthorized
             return {
                 redirect: {
                     destination: '/',
@@ -116,7 +115,7 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
                 },
             };
         }
-        // Return a default props object if there's an error
+
         return {
             props: {
                 data: {

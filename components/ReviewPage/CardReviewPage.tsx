@@ -61,12 +61,12 @@ interface Card {
     deleted_at: number | null
 }
 
-interface BoxesPageProps {
+interface Props {
     cards: Card[];
     createAlert: CreateAlertFunction;
 }
 
-const CardReviewPage = ({ cards, createAlert }: BoxesPageProps) => {
+const CardReviewPage = ({ cards, createAlert }: Props) => {
     const { push, asPath } = useRouter();
 
     const [isFocused, setIsFocused] = useState(false);
@@ -123,7 +123,7 @@ const CardReviewPage = ({ cards, createAlert }: BoxesPageProps) => {
         setOpenModal(true);
     }, []);
 
-    const onEditAction = useCallback((id: number | string, label: string) => {     
+    const onEditAction = useCallback((id: number | string, label: string) => {
         push(`/edit-word/${label}-${asPath.split('/')[2]}-${id}`);
         localStorage.setItem('path', asPath);
     }, [push, asPath]);
