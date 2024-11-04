@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
+import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
+import { CreateAlertFunction } from '@/types/common';
 
 // import MUI Components
 import { Container } from '@mui/material';
@@ -17,14 +19,35 @@ import CardViewPage from '@/components/CardViewPage';
 
 // import SVG
 import swap from '@/public/Icons/swap.svg';
-interface Props {
-    data: {
-        data: [],
-        title: string
+
+interface Card {
+    id: number;
+    box_id: number;
+    front: string;
+    back: {
+        example: string,
+        definition: string
     };
+    type: string;
+    voice_url: string,
+    is_favorite: boolean,
+    srs_interval: number,
+    ease_factor: string,
+    due_date: number,
+    created_at: number,
+    updated_at: number | null,
+    deleted_at: number | null
 }
 
-const CardView = ({ data }: Props) => {
+interface Props {
+    data: {
+        title: string;
+        initialBoxes: Card[];
+    };
+    createAlert: CreateAlertFunction;
+}
+
+const CardView = ({ data, createAlert }: Props) => {
     const { push } = useRouter();
 
     // add context
@@ -52,14 +75,14 @@ const CardView = ({ data }: Props) => {
                     </div>
                     <div className='d-flex flex-row align-items-center justify-content-center mt-4'>
                         <h4 style={{ color: "white" }}>
-                            {cardViewCounter <= data.data.length ? cardViewCounter : data.data.length} of {data.data.length}
+                            {cardViewCounter <= data.initialBoxes.length ? cardViewCounter : data.initialBoxes.length} of {data.initialBoxes.length}
                         </h4>
                     </div>
                 </Container>
             </div>
             <div className='bg-card-view-body'>
                 <Container maxWidth='sm' className='p-4'>
-                    <CardViewPage slides={data.data} title={data.title} />
+                    <CardViewPage data={data} createAlert={createAlert} />
                 </Container>
             </div>
         </Layout>
@@ -67,57 +90,42 @@ const CardView = ({ data }: Props) => {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
-    const { resolvedUrl } = context;
+    const axiosInstance = axiosInstanceSSR(context as any);
 
+    const { resolvedUrl } = context;
     const url_details = decodeURIComponent(resolvedUrl).split('/');
     const title = url_details[url_details.length - 1];
 
-    const data = [
-        {
-            label: 'Eat',
-            type: 'Verb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 1
-        },
-        {
-            label: 'Snack',
-            type: 'Noun',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 2
-        },
-        {
-            label: 'Hello',
-            type: 'Adverb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 3
-        },
-        {
-            label: 'Honey',
-            type: 'Adjective',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 4
-        },
-        {
-            label: 'Pure',
-            type: 'Verb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 5
-        },
-    ]
-
-    return {
-        props: {
-            data: {
-                data,
-                title
-            }
+    try {
+        const response = await axiosInstance.get<Card[]>(`/card/get-cards/${title}`);
+        return {
+            props: {
+                data: {
+                    title,
+                    initialBoxes: response.data
+                }
+            },
+        };
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            // Redirect to login page if unauthorized
+            return {
+                redirect: {
+                    destination: '/',
+                    permanent: false,
+                },
+            };
         }
-    };
+        // Return a default props object if there's an error
+        return {
+            props: {
+                data: {
+                    title: '',
+                    initialBoxes: []
+                }
+            }
+        };
+    }
 };
 
 export default CardView;

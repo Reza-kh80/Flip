@@ -1,4 +1,6 @@
 import React, { Fragment, useState, useEffect, useRef, useCallback } from 'react';
+import { CreateAlertFunction } from '@/types/common';
+import axiosInstance from '@/helper/axiosInstance';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 
@@ -13,7 +15,7 @@ import 'swiper/css/effect-creative';
 import { clickChecking } from '@/context/Exceptional';
 
 // import MUI
-import { Box, Button, Grid } from '@mui/material';
+import { Box, Button, duration, Grid } from '@mui/material';
 
 // import SVG
 import volumeUp from '../public/Icons/volume-up.svg';
@@ -22,27 +24,43 @@ import edit from '../public/Icons/edit.svg';
 import star from '../public/Icons/star.svg';
 import sad from '../public/Icons/sad.svg';
 
-type Slide = {
-    label: string;
-    description: string;
-    example: string;
-    type: string;
+interface Card {
     id: number;
-};
+    box_id: number;
+    front: string;
+    back: {
+        example: string,
+        definition: string
+    };
+    type: string;
+    voice_url: string,
+    is_favorite: boolean,
+    srs_interval: number,
+    ease_factor: string,
+    due_date: number,
+    created_at: number,
+    updated_at: number | null,
+    deleted_at: number | null
+}
 
-type Props = {
-    slides: Slide[];
-    title: string;
-};
+interface Props {
+    data: {
+        title: string;
+        initialBoxes: Card[];
+    };
+    createAlert: CreateAlertFunction;
+}
 
-const CardViewPage = ({ slides, title }: Props) => {
+const CardViewPage = ({ data, createAlert }: Props) => {
     const { push, asPath } = useRouter();
     const { handleChangeNextViewCounter, handleChangePrevViewCounter } = clickChecking();
-    
-    const swiperRef = useRef(null);
+
+    const swiperRef = useRef<SwiperType | null>(null);
     const [prevIndex, setPrevIndex] = useState<number>(0);
+    const [currentIndex, setCurrentIndex] = useState<number>(0);
     const [isFlipped, setIsFlipped] = useState<boolean>(false);
     const [height, setHeight] = useState<number>(0);
+    const [startTime, setStartTime] = useState<number>(0);
 
     useEffect(() => {
         const handleResize = () => setHeight(window.innerHeight);
@@ -53,6 +71,7 @@ const CardViewPage = ({ slides, title }: Props) => {
 
     const handleSlideChange = useCallback((swiper: SwiperType) => {
         const currentIndex = swiper.activeIndex;
+        setCurrentIndex(currentIndex);
         const isNext = currentIndex > prevIndex;
         setIsFlipped(false);
         isNext ? handleChangeNextViewCounter() : handleChangePrevViewCounter();
@@ -60,18 +79,61 @@ const CardViewPage = ({ slides, title }: Props) => {
     }, [prevIndex, handleChangeNextViewCounter, handleChangePrevViewCounter]);
 
     const handleEditClick = useCallback((label: string, id: number) => {
-        push(`/edit-word/${label}-${title}-${id}`);
+        push(`/edit-word/${label}-${data.title}-${id}`);
         localStorage.setItem('path', asPath);
-    }, [push, asPath, title]);
+    }, [push, asPath, data.title]);
 
-    const renderCardFace = (slide: Slide, isFront: boolean) => (
+    const handleFlip = () => {
+        setIsFlipped(!isFlipped);
+        setStartTime(Date.now());
+    };
+
+    const slideToNext = () => {
+        if (swiperRef.current) {
+            swiperRef.current.slideNext();
+        }
+    };
+
+    const handleForgot = () => {
+
+        const endTime = Date.now();
+        const difference = endTime - startTime;
+
+        axiosInstance.post(`/card/review/${data.initialBoxes[currentIndex].id}`, {
+            rating: 'FORGET',
+            duration: difference
+        }).then((res) => {
+            slideToNext();
+            createAlert(res.data.message + '_success', 5);
+        }).catch((error) => {
+            createAlert('An error occurred. Please try again._error', 5);
+        })
+    }
+
+    const handleKnow = () => {
+
+        const endTime = Date.now();
+        const difference = endTime - startTime;
+
+        axiosInstance.post(`/card/review/${data.initialBoxes[currentIndex].id}`, {
+            rating: 'KNOW',
+            duration: difference
+        }).then((res) => {
+            slideToNext();
+            createAlert(res.data.message + '_success', 5);
+        }).catch((error) => {
+            createAlert('An error occurred. Please try again._error', 5);
+        })
+    }
+
+    const renderCardFace = (slide: Card, isFront: boolean) => (
         <div className={`card-face card-${isFront ? 'front' : 'back'}`}>
             <Box className='d-flex flex-row-reverse justify-content-between w-100 align-items-center'>
                 <section>
                     <Button style={{ minWidth: '0' }}>
                         <Image priority src={star} alt="star" height={24} width={24} />
                     </Button>
-                    <Button style={{ minWidth: '0' }} onClick={() => handleEditClick(slide.label, slide.id)}>
+                    <Button style={{ minWidth: '0' }} onClick={() => handleEditClick(slide.front, slide.id)}>
                         <Image priority src={edit} alt="edit" height={24} width={24} />
                     </Button>
                 </section>
@@ -84,24 +146,24 @@ const CardViewPage = ({ slides, title }: Props) => {
             </Box>
             {isFront ? (
                 <>
-                    <Box component='h2' mt={18} className='fw-bold' fontSize={40} color='#133266'>{slide.label}</Box>
+                    <Box component='h2' mt={18} className='fw-bold' fontSize={40} color='#133266'>{slide.front}</Box>
                     <Box mt={18}>
-                        <Button className='flip-btn' onClick={() => setIsFlipped(true)}>Flip</Button>
+                        <Button className='flip-btn' onClick={handleFlip}>Flip</Button>
                     </Box>
                 </>
             ) : (
                 <>
                     <Box mt={10} color='#133266' display='flex' justifyContent='center' flexDirection='column' alignItems='center'>
-                        <Box component='h2' fontWeight='bold' fontSize={40}>{slide.label}</Box>
-                        <Box mt={4}>{slide.description}</Box>
-                        <Box mt={2}>{slide.example}</Box>
+                        <Box component='h2' fontWeight='bold' fontSize={40}>{slide.front}</Box>
+                        <Box mt={4}>{slide.back.definition}</Box>
+                        <Box mt={2}>{slide.back.example}</Box>
                     </Box>
                     <Grid container spacing={1} display='flex' alignItems='center' justifyContent='space-between' flexDirection='row' mt={10}>
                         <Grid xs={6} item>
-                            <Button startIcon={<Image priority src={sad} alt="sad" height={24} width={24} />} className='forgot-btn'>Forgot</Button>
+                            <Button startIcon={<Image priority src={sad} alt="sad" height={24} width={24} />} onClick={handleForgot} className='forgot-btn'>Forgot</Button>
                         </Grid>
                         <Grid xs={6} item>
-                            <Button onClick={() => setIsFlipped(false)} startIcon={<Image priority src={happy} alt="happy" height={24} width={24} />} className='know-btn'>Know</Button>
+                            <Button onClick={handleKnow} startIcon={<Image priority src={happy} alt="happy" height={24} width={24} />} className='know-btn'>Know</Button>
                         </Grid>
                     </Grid>
                 </>
@@ -113,7 +175,9 @@ const CardViewPage = ({ slides, title }: Props) => {
         <Fragment>
             <div style={{ height: `${height - 120}px` }} className='d-flex align-items-center'>
                 <Swiper
-                    ref={swiperRef}
+                    onSwiper={(swiper) => {
+                        swiperRef.current = swiper;
+                    }}
                     grabCursor={true}
                     effect={'creative'}
                     creativeEffect={{
@@ -125,7 +189,7 @@ const CardViewPage = ({ slides, title }: Props) => {
                     onSlideChange={handleSlideChange}
                     style={{ width: '300px', height: '500px' }}
                 >
-                    {slides.map((slide) => (
+                    {data.initialBoxes.map((slide) => (
                         <SwiperSlide key={slide.id}>
                             <div className="card-container">
                                 <div className={`card ${isFlipped ? 'flipped' : ''}`} style={{ border: 'none' }}>
