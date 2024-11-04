@@ -51,7 +51,6 @@ interface Props_SSR {
 }
 
 const Review = ({ data, createAlert }: Props) => {
-    console.log(data);
 
     const { push } = useRouter();
 
@@ -90,7 +89,7 @@ export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context)
     const title = context.resolvedUrl.split('/')[2];
 
     try {
-        const response = await axiosInstance.get<Card[]>(`/card/get-card/${title}`);
+        const response = await axiosInstance.get<Card[]>(`/card/get-cards/${title}`);
         return {
             props: {
                 data: {

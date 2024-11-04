@@ -10,39 +10,61 @@ import {
     Select,
     Box,
 } from '@mui/material';
+import { CreateAlertFunction } from '@/types/common';
+import axiosInstance from '@/helper/axiosInstance';
 
 // import SVG
 import downCircle from '../public/Icons/down-circle.svg';
 
-interface Props {
-    chiocedWord: {
-        label: string,
-        description: string,
+interface Card {
+    id: number;
+    box_id: number;
+    front: string;
+    back: {
         example: string,
-        type: string,
-        id: number
-    },
-    cardsBox: {
-        label: string,
-        number: number,
-        id: number
-    }[],
-    chiocedCardBox: {
-        label: string,
-        number: number,
-        id: number
-    }
+        definition: string
+    };
+    type: string;
+    voice_url: string,
+    is_favorite: boolean,
+    srs_interval: number,
+    ease_factor: string,
+    due_date: number,
+    created_at: number,
+    updated_at: number | null,
+    deleted_at: number | null
 }
 
-const EditWordsPage = ({ chiocedWord, cardsBox, chiocedCardBox }: Props) => {
+interface Box {
+    id: number;
+    user_id: number;
+    name: string;
+    language_code: string;
+    created_at: number;
+    updated_at: number | null;
+    deleted_at: number | null;
+    _count: {
+        cards: number;
+    };
+}
+
+interface Props {
+    card: Card;
+    initialBoxes: Box[],
+    createAlert: CreateAlertFunction;
+}
+
+const EditWordsPage = ({ card, initialBoxes, createAlert }: Props) => {
+
     const { push } = useRouter();
     const [formState, setFormState] = useState({
-        label: chiocedWord.label,
-        type: chiocedWord.type,
-        description: chiocedWord.description,
-        example: chiocedWord.example,
-        cardBox: chiocedCardBox.label,
+        label: card.front,
+        type: card.type,
+        description: card.back.definition,
+        example: card.back.example,
+        cardBox: initialBoxes.find(box => box.id === card.box_id)?.id.toString() || '',
     });
+
     const [errors, setErrors] = useState({
         label: '',
         type: false,
@@ -79,11 +101,31 @@ const EditWordsPage = ({ chiocedWord, cardsBox, chiocedCardBox }: Props) => {
     const handleSaveChanges = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (validateForm()) {
-            const path = localStorage.getItem('path');
-            if (path) {
-                push(path);
-                localStorage.removeItem('path');
-            }
+            axiosInstance.patch(`/card/update/${card.id}`, {
+                box_id: formState.cardBox,
+                front: formState.label,
+                back: {
+                    definition: formState.description,
+                    example: formState.example
+                },
+                type: formState.type,
+            }).then((res) => {
+                createAlert(`${res.data.message}_success`, 5);
+                setFormState({
+                    label: '',
+                    type: '',
+                    description: '',
+                    example: '',
+                    cardBox: '',
+                });
+                const path = localStorage.getItem('path');
+                if (path) {
+                    push(path);
+                    localStorage.removeItem('path');
+                }
+            }).catch((error) => {
+                createAlert('An error occurred. Please try again._error', 5);
+            })
         }
     };
 
@@ -170,7 +212,7 @@ const EditWordsPage = ({ chiocedWord, cardsBox, chiocedCardBox }: Props) => {
                             <Image priority src={downCircle} alt="downCircle" width={25} height={25} />
                         )}
                     >
-                        {['Verb', 'Noun', 'Adjective', 'Adverb'].map((type) => (
+                        {['NOUN', 'ADJ', 'ADV', 'VERB'].map((type) => (
                             <MenuItem key={type} value={type}>{type}</MenuItem>
                         ))}
                     </Select>
@@ -268,8 +310,8 @@ const EditWordsPage = ({ chiocedWord, cardsBox, chiocedCardBox }: Props) => {
                             <Image priority src={downCircle} alt="downCircle" width={25} height={25} />
                         )}
                     >
-                        {cardsBox.map((item) => (
-                            <MenuItem key={item.id} value={item.label}>{item.label}</MenuItem>
+                        {initialBoxes.map((item) => (
+                            <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>
                         ))}
                     </Select>
                     {errors.cardBox && (

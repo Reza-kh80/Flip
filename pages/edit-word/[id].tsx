@@ -2,41 +2,57 @@ import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
-
-// import MUI Components
+import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
+import { CreateAlertFunction } from '@/types/common';
 import { Container } from '@mui/material';
-
-// import main layer and other components
 import Layout from '@/components/Layout';
-
-// import components
 import EditWordsPage from '@/components/EditWordsPage';
-
-// import SVG
 import leftSquare from '@/public/Icons/left-square.svg';
-interface Props {
-    data: {
-        chiocedWord: {
-            label: string,
-            description: string,
-            example: string
-            type: string
-            id: number
-        },
-        cardsBox: {
-            label: string,
-            number: number,
-            id: number
-        }[],
-        chiocedCardBox: {
-            label: string,
-            number: number,
-            id: number
-        }
+
+interface Card {
+    id: number;
+    box_id: number;
+    front: string;
+    back: {
+        example: string,
+        definition: string
+    };
+    type: string;
+    voice_url: string;
+    is_favorite: boolean;
+    srs_interval: number;
+    ease_factor: string;
+    due_date: number;
+    created_at: number;
+    updated_at: number | null;
+    deleted_at: number | null;
+}
+
+interface Box {
+    id: number;
+    user_id: number;
+    name: string;
+    language_code: string;
+    created_at: number;
+    updated_at: number | null;
+    deleted_at: number | null;
+    _count: {
+        cards: number;
     };
 }
 
-const EditWord = ({ data }: Props) => {
+interface Props_SSR {
+    card: Card;
+    initialBoxes: Box[];
+}
+
+interface EditWordProps {
+    card: Card;
+    initialBoxes: Box[];
+    createAlert: CreateAlertFunction;
+}
+
+const EditWord = ({ card, initialBoxes, createAlert }: EditWordProps) => {
     const { push, asPath } = useRouter();
 
     const backToReviewPage = () => {
@@ -44,7 +60,7 @@ const EditWord = ({ data }: Props) => {
     }
 
     return (
-        <Layout title={`Edit Word`}>
+        <Layout title="Edit Word">
             <main className='bg-edit'>
                 <Container maxWidth='sm' className='p-4'>
                     <div className='d-flex flex-row align-items-center'>
@@ -55,107 +71,67 @@ const EditWord = ({ data }: Props) => {
                             Edit Word
                         </h2>
                     </div>
-                    <EditWordsPage chiocedWord={data.chiocedWord} cardsBox={data.cardsBox} chiocedCardBox={data.chiocedCardBox} />
+                    <EditWordsPage card={card} initialBoxes={initialBoxes} createAlert={createAlert} />
                 </Container>
             </main>
         </Layout>
     )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
+export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context) => {
+    const axiosInstance = axiosInstanceSSR(context as any);
     const { resolvedUrl } = context;
 
     const url_details = decodeURIComponent(resolvedUrl).split('/');
     const id = parseInt(url_details[2].split('-')[2]);
-    const boxName = url_details[2].split('-')[1];
 
-    const data = [
-        {
-            label: 'Eat',
-            type: 'Verb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 1
-        },
-        {
-            label: 'Snack',
-            type: 'Noun',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 2
-        },
-        {
-            label: 'Hello',
-            type: 'Adverb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 3
-        },
-        {
-            label: 'Honey',
-            type: 'Adjective',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 4
-        },
-        {
-            label: 'Pure',
-            type: 'Verb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 5
-        },
-    ]
-    const chiocedWord = data.find((item) => item.id === id);
+    try {
+        const response = await axiosInstance.get<Card>(`/card/get-card/${id}`);
+        const responseBox = await axiosInstance.get<Box[]>('/boxes/get-all');
 
-    const cardsBox = [
-        {
-            label: 'Common Verbs',
-            number: 253,
-            id: 1
-        },
-        {
-            label: 'Dommon Verbs',
-            number: 300,
-            id: 2
-        },
-        {
-            label: 'Xommon Verbs',
-            number: 265,
-            id: 3
-        },
-        {
-            label: 'Aommon Verbs',
-            number: 265,
-            id: 4
-        },
-        {
-            label: 'Wommon Verbs',
-            number: 265,
-            id: 5
-        },
-        {
-            label: 'Rommon Verbs',
-            number: 265,
-            id: 6
-        },
-        {
-            label: 'Tommon Verbs',
-            number: 265,
-            id: 7
+        return {
+            props: {
+                card: response.data,
+                initialBoxes: responseBox.data,
+            },
+        };
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            return {
+                redirect: {
+                    destination: '/',
+                    permanent: false,
+                },
+            };
         }
-    ]
-    const chiocedCardBox = cardsBox.find((item) => item.label === boxName);
 
-    return {
-        props: {
-            data: {
-                chiocedWord,
-                cardsBox,
-                chiocedCardBox
+        // Create a default Card object that matches the Card interface
+        const defaultCard: Card = {
+            id: 0,
+            box_id: 0,
+            front: '',
+            back: {
+                example: '',
+                definition: ''
+            },
+            type: '',
+            voice_url: '',
+            is_favorite: false,
+            srs_interval: 0,
+            ease_factor: '0',
+            due_date: 0,
+            created_at: 0,
+            updated_at: null,
+            deleted_at: null
+        };
+
+        return {
+            props: {
+                card: defaultCard,
+                initialBoxes: [],
             }
-        }
-    };
+        };
+    }
 };
 
 export default EditWord;
