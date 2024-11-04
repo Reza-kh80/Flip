@@ -9,12 +9,23 @@ import deleteIcon from '@/public/Icons/delete.svg';
 import editIcon from '@/public/Icons/edit.svg';
 
 interface ListItemProps {
-    label: string,
-    type: string,
-    description: string,
-    example: string,
-    id: string | number;
-    index: number;
+    id: number;
+    box_id: number;
+    front: string;
+    back: {
+        example: string,
+        definition: string
+    };
+    index: number,
+    type: string;
+    voice_url: string,
+    is_favorite: boolean,
+    srs_interval: number,
+    ease_factor: string,
+    due_date: number,
+    created_at: number,
+    updated_at: number | null,
+    deleted_at: number | null,
     onEditAction: (id: string | number, label: string, type: string) => void;
     onDeleteAction: (id: string | number) => void;
 }
@@ -23,7 +34,7 @@ interface UseSwipeOptions {
     completedThreshold?: number;
 }
 
-const ListItemBox = ({ id, index, label, type, description, example, onDeleteAction, onEditAction }: ListItemProps) => {
+const ListItemBox = ({ id, index, front, type, back, onDeleteAction, onEditAction }: ListItemProps) => {
 
     const useSwipe = (
         { completedThreshold = 50 }: UseSwipeOptions = {}
@@ -131,15 +142,15 @@ const ListItemBox = ({ id, index, label, type, description, example, onDeleteAct
         <Fragment>
             <div className="list-item" style={index !== 0 ? { margin: '40px 0' } : { marginTop: '0' }} /*onClick={() => goToReviewPage(label)}*/>
                 <div className='card-global-page-review mt-4' ref={ref}>
-                    <div className='d-flex fex-row align-items-center'>
-                        <h3 className='me-3 fw-bold'>{label}</h3>
+                    <div className='d-flex fex-row align-items-center justify-content-between'>
+                        <h3 className='me-3 fw-bold'>{front}</h3>
                         <span className='border-type'>{type}</span>
                     </div>
                     <div className='mt-3'>
-                        {description}
+                        {back.definition}
                     </div>
                     <div className='mt-3'>
-                        {example}
+                        {back.example}
                     </div>
                 </div>
                 <div className="list-item__option">
@@ -158,7 +169,7 @@ const ListItemBox = ({ id, index, label, type, description, example, onDeleteAct
                             startIcon={
                                 <Image priority src={editIcon} alt="edit" width={25} height={25} />
                             }
-                            onClick={() => onEditAction(id, label, type)}
+                            onClick={() => onEditAction(id, front, type)}
                         >Edit</Button>
                     </div>
                 </div>

@@ -1,7 +1,9 @@
-import React from 'react';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
+import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
+import { CreateAlertFunction } from '@/types/common';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
+import React from 'react';
 
 // import MUI Components
 import { Container } from '@mui/material';
@@ -14,14 +16,43 @@ import CardReviewPage from '@/components/ReviewPage/CardReviewPage';
 import leftSquare from '@/public/Icons/left-square.svg';
 import play from '@/public/Icons/play.svg';
 
+interface Card {
+    id: number;
+    box_id: number;
+    front: string;
+    back: {
+        example: string,
+        definition: string
+    };
+    type: string;
+    voice_url: string,
+    is_favorite: boolean,
+    srs_interval: number,
+    ease_factor: string,
+    due_date: number,
+    created_at: number,
+    updated_at: number | null,
+    deleted_at: number | null
+}
+
 interface Props {
     data: {
         title: string;
-        data: []
+        initialBoxes: Card[];
+    };
+    createAlert: CreateAlertFunction;
+}
+
+interface Props_SSR {
+    data: {
+        title: string;
+        initialBoxes: Card[];
     };
 }
 
-const Review = ({ data }: Props) => {
+const Review = ({ data, createAlert }: Props) => {
+    console.log(data);
+
     const { push } = useRouter();
 
     const backToHomePage = () => {
@@ -33,7 +64,7 @@ const Review = ({ data }: Props) => {
     }
 
     return (
-        <Layout title={`Review-${data.title}`}>
+        <Layout title={`Review – ${data.title}`}>
             <main className='bg-search'>
                 <Container maxWidth='sm' className='p-4'>
                     <div className='d-flex flex-row align-items-center justify-content-between'>
@@ -47,65 +78,47 @@ const Review = ({ data }: Props) => {
                             <Image priority src={play} alt='play' width={32} height={32} />
                         </span>
                     </div>
-                    <CardReviewPage cards={data.data} />
+                    <CardReviewPage createAlert={createAlert} cards={data.initialBoxes} />
                 </Container>
             </main>
         </Layout>
     )
 }
 
-export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
-    const { resolvedUrl } = context;
+export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context) => {
+    const axiosInstance = axiosInstanceSSR(context as any);
+    const title = context.resolvedUrl.split('/')[2];
 
-    const url_details = decodeURIComponent(resolvedUrl).split('/');
-    const title = url_details[url_details.length - 1];
-
-    const data = [
-        {
-            label: 'Eat',
-            type: 'Verb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 1
-        },
-        {
-            label: 'Snack',
-            type: 'Noun',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 2
-        },
-        {
-            label: 'Hello',
-            type: 'Adverb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 3
-        },
-        {
-            label: 'Honey',
-            type: 'Adjective',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 4
-        },
-        {
-            label: 'Pure',
-            type: 'Verb',
-            description: `put (food) into the mouth and chew and swallow it.`,
-            example: `"he was eating a hot dog"`,
-            id: 5
-        },
-    ]
-
-    return {
-        props: {
-            data: {
-                title,
-                data
-            }
+    try {
+        const response = await axiosInstance.get<Card[]>(`/card/get-card/${title}`);
+        return {
+            props: {
+                data: {
+                    title,
+                    initialBoxes: response.data
+                }
+            },
+        };
+    } catch (error: any) {
+        if (error.response && error.response.status === 401) {
+            // Redirect to login page if unauthorized
+            return {
+                redirect: {
+                    destination: '/',
+                    permanent: false,
+                },
+            };
         }
-    };
+        // Return a default props object if there's an error
+        return {
+            props: {
+                data: {
+                    title: '',
+                    initialBoxes: []
+                }
+            }
+        };
+    }
 };
 
 export default Review;

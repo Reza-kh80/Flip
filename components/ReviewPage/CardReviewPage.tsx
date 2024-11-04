@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { CreateAlertFunction } from '@/types/common';
+import axiosInstance from '@/helper/axiosInstance';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
-
-// import MUI Components
 import {
     Autocomplete,
     Typography,
@@ -11,15 +11,13 @@ import {
     Button,
     Modal,
     Box,
+    AutocompleteChangeReason,
+    AutocompleteChangeDetails,
 } from '@mui/material';
 
-// import components
 import ListItemBox from './ListItemBox';
-
-// import SVG
 import searchInput from '@/public/Icons/search-input.svg';
 
-// import styles
 const shakeLabel = keyframes`
   0% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -44,31 +42,46 @@ const styleModalOption = {
     p: 3
 };
 
-type Value = {
-    label: string,
-    type: string,
-    description: string,
-    example: string,
-    id: string | number
+interface Card {
+    id: number;
+    box_id: number;
+    front: string;
+    back: {
+        example: string,
+        definition: string
+    };
+    type: string;
+    voice_url: string,
+    is_favorite: boolean,
+    srs_interval: number,
+    ease_factor: string,
+    due_date: number,
+    created_at: number,
+    updated_at: number | null,
+    deleted_at: number | null
 }
 
-interface Props {
-    cards: Value[]
+interface BoxesPageProps {
+    cards: Card[];
+    createAlert: CreateAlertFunction;
 }
 
-const CardReviewPage = ({ cards }: Props) => {
+const CardReviewPage = ({ cards, createAlert }: BoxesPageProps) => {
     const { push, asPath } = useRouter();
-    
+
     const [isFocused, setIsFocused] = useState(false);
-    const [search, setSearch] = useState<string | undefined>(undefined);
-    const [card, setCard] = useState<Value[]>(cards);
+    const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+    const [card, setCard] = useState<Card[]>(cards);
     const [openModal, setOpenModal] = useState(false);
+    const [filteredOptions, setFilteredOptions] = useState<Card[]>([]);
     const [deleteId, setDeleteId] = useState<number | string | null>(null);
     const [height, setHeight] = useState(0);
 
-    const filteredOptions = useMemo(() =>
-        card.filter(option => option.label.toLowerCase().includes((search || '').toLowerCase())),
-        [search, card]);
+    useEffect(() => {
+        setFilteredOptions(card?.filter(option =>
+            option.front.toLowerCase().includes((selectedCard?.front || '').toLowerCase())
+        ));
+    }, [selectedCard, card]);
 
     useEffect(() => {
         const handleResize = () => setHeight(window.innerHeight);
@@ -77,24 +90,40 @@ const CardReviewPage = ({ cards }: Props) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handleChange = useCallback((event: React.SyntheticEvent<Element, Event>, value: string | Value | null) => {
-        setSearch(typeof value === 'string' || value === null ? undefined : value.label);
-    }, []);
+    const handleChange = useCallback(
+        (
+            _event: React.SyntheticEvent<Element, Event>,
+            value: string | Card | null,
+            reason: AutocompleteChangeReason,
+            _details?: AutocompleteChangeDetails<Card>
+        ) => {
+            setSelectedCard(typeof value === 'object' ? value : null);
+        },
+        []
+    );
 
     const confirmDelete = useCallback(() => {
         if (deleteId !== null) {
+            axiosInstance.delete(`/card/delete-card/${deleteId}`).then((res) => {
+                if (res.status === 204) {
+                    createAlert("Word deleted successfully!_success", 5);
+                }
+            }).catch((error) => {
+                createAlert('An error occurred. Please try again._error', 5);
+            });
+
             setCard(currentItems => currentItems.filter(i => i.id !== deleteId));
             setOpenModal(false);
             setDeleteId(null);
         }
-    }, [deleteId]);
+    }, [deleteId, createAlert]);
 
     const onDeleteAction = useCallback((id: number | string) => {
         setDeleteId(id);
         setOpenModal(true);
     }, []);
 
-    const onEditAction = useCallback((id: number | string, label: string) => {
+    const onEditAction = useCallback((id: number | string, label: string) => {     
         push(`/edit-word/${label}-${asPath.split('/')[2]}-${id}`);
         localStorage.setItem('path', asPath);
     }, [push, asPath]);
@@ -104,9 +133,20 @@ const CardReviewPage = ({ cards }: Props) => {
             <div className='position-relative' style={{ marginTop: '35px' }}>
                 <Autocomplete
                     freeSolo
-                    value={search}
+                    value={selectedCard}
                     onChange={handleChange}
-                    sx={{ border: '1px solid #133266', "& fieldset": { border: 'none' }, backgroundColor: '#AEBED6', borderRadius: '20px' }}
+                    getOptionLabel={(option: string | Card) => {
+                        if (typeof option === 'string') {
+                            return option;
+                        }
+                        return option?.front || '';
+                    }}
+                    sx={{
+                        border: '1px solid #133266',
+                        "& fieldset": { border: 'none' },
+                        backgroundColor: '#AEBED6',
+                        borderRadius: '20px'
+                    }}
                     renderInput={(params) => (
                         <div style={{ position: 'relative' }}>
                             <TextField
@@ -123,7 +163,7 @@ const CardReviewPage = ({ cards }: Props) => {
                                 onFocus={() => setIsFocused(true)}
                                 onBlur={() => setIsFocused(false)}
                             />
-                            {search === undefined && (
+                            {!selectedCard && (
                                 <Box
                                     sx={{
                                         position: 'absolute',
@@ -164,24 +204,35 @@ const CardReviewPage = ({ cards }: Props) => {
                 aria-describedby="modal-modal-description"
             >
                 <Box sx={styleModalOption}>
-                    <Typography id="modal-modal-title" variant="h6" component="h2"
+                    <Typography
+                        id="modal-modal-title"
+                        variant="h6"
+                        component="h2"
                         sx={{
                             fontSize: '20px',
                             fontWeight: 'bold',
                             lineHeight: '23.14px',
                             textAlign: 'left',
                             color: '#133266',
-                        }}>
+                        }}
+                    >
                         Are You Sure You Want To Delete This Word From The Cards Box?
                     </Typography>
-                    <Typography id="modal-modal-description" sx={{ mt: 10 }} display='flex' alignItems='center' justifyContent='space-between' flexDirection='row'>
+                    <Typography
+                        id="modal-modal-description"
+                        sx={{ mt: 10 }}
+                        display='flex'
+                        alignItems='center'
+                        justifyContent='space-between'
+                        flexDirection='row'
+                    >
                         <Button className='cancel-style' onClick={() => setOpenModal(false)}>Cancel</Button>
                         <Button className='delete-style' onClick={confirmDelete}>Delete</Button>
                     </Typography>
                 </Box>
             </Modal>
         </>
-    )
-}
+    );
+};
 
 export default CardReviewPage;

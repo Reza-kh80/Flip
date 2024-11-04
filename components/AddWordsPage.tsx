@@ -91,6 +91,13 @@ const AddWordsPage = ({ initialBoxes, createAlert }: AddWordsPageProps) => {
                 type: formData.type,
             }).then(() => {
                 createAlert("Word added successfully!_success", 5);
+                setFormData({
+                    label: '',
+                    type: '',
+                    description: '',
+                    example: '',
+                    cardBox: '',
+                });
             }).catch((error) => {
                 createAlert('An error occurred. Please try again._error', 5);
             })
