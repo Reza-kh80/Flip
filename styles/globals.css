@@ -101,7 +101,8 @@ h2 {
 .new-cards-box,
 .save-change,
 .add-words,
-.flip-it-box {
+.flip-it-box,
+.add-update {
     background-color: #133266;
     width: 100%;
     display: flex;
@@ -110,7 +111,8 @@ h2 {
 
 .btn-new-cards-box,
 .btn-save-change,
-.btn-add-words {
+.btn-add-words,
+.btn-add-update {
     width: 275px;
     height: 50px;
     background: var(--White, #FFFFFF);
@@ -144,6 +146,12 @@ h2 {
 
 .bg-setting {
     background-color: #A5DAE3;
+    width: 100%;
+    height: 100%;
+}
+
+.bg-account {
+    background-color: #EFE5C1;
     width: 100%;
     height: 100%;
 }

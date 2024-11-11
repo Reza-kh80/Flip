@@ -55,7 +55,7 @@ const SettingStructure = ({ createAlert }: ComponentProps) => {
     return (
         <Fragment>
             <div style={{ height: `${height - 200}px` }} className='scrollable-div'>
-                <Link href='#' className="account-style d-felx mt-5 flex-row align-items-center justify-content-center">
+                <Link href='/account' className="account-style d-felx mt-5 flex-row align-items-center justify-content-center">
                     <Image priority src={profile} width={24} height={24} alt="profile" />
                     <span className="ms-2">Account</span>
                 </Link>
