@@ -134,6 +134,11 @@ h2 {
     width: 100%;
 }
 
+.bg-main-home {
+    background-color: #AEBED6;
+    width: 100%;
+}
+
 .bg-search {
     background-color: #EFC1C4;
     width: 100%;

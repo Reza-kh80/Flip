@@ -15,7 +15,7 @@ import 'swiper/css/effect-creative';
 import { clickChecking } from '@/context/Exceptional';
 
 // import MUI
-import { Box, Button, duration, Grid } from '@mui/material';
+import { Box, Button, Grid } from '@mui/material';
 
 // import SVG
 import volumeUp from '../public/Icons/volume-up.svg';
@@ -95,7 +95,6 @@ const CardViewPage = ({ data, createAlert }: Props) => {
     };
 
     const handleForgot = () => {
-
         const endTime = Date.now();
         const difference = endTime - startTime;
 
@@ -110,8 +109,28 @@ const CardViewPage = ({ data, createAlert }: Props) => {
         })
     }
 
-    const handleKnow = () => {
+    const handleSpeech = (text: string) => {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.pitch = 1;
+            utterance.rate = 1;
+            utterance.volume = 1;
 
+            // Set specific voice if available
+            const voices = window.speechSynthesis.getVoices();
+            const voice = voices.find(voice => voice.lang === 'en-US');
+            if (voice) {
+                utterance.voice = voice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        } else {
+            createAlert('Text-to-speech is not supported in this browser._error', 5);
+        }
+    };
+
+    const handleKnow = () => {
         const endTime = Date.now();
         const difference = endTime - startTime;
 
@@ -124,7 +143,7 @@ const CardViewPage = ({ data, createAlert }: Props) => {
         }).catch((error) => {
             createAlert('An error occurred. Please try again._error', 5);
         })
-    }
+    };
 
     const renderCardFace = (slide: Card, isFront: boolean) => (
         <div className={`card-face card-${isFront ? 'front' : 'back'}`}>
@@ -139,7 +158,7 @@ const CardViewPage = ({ data, createAlert }: Props) => {
                 </section>
                 <section>
                     <Button style={{ minWidth: '0' }}>
-                        <Image priority src={volumeUp} alt="volumeUp" height={24} width={24} />
+                        <Image priority src={volumeUp} onClick={() => handleSpeech(slide.front)} alt="volumeUp" height={24} width={24} />
                     </Button>
                 </section>
                 {!isFront && <section className='type-design'>{slide.type}</section>}

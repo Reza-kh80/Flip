@@ -103,7 +103,7 @@ const Login_Card = ({ createAlert }: ComponentProps) => {
             // Update axios instance to use the new access token
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
             createAlert(response.data.message + '_success', 3)
-            router.push('/flip');
+            router.push('/');
         } catch (error: any) {
             if (error.response) {
                 switch (error.response.status) {

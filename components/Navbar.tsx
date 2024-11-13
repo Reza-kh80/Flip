@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 // import SVG
-import category from '@/public/Icons/filter.svg';
+import category from '@/public/Icons/category.svg';
 import search from '@/public/Icons/search.svg';
 import filter from '@/public/Icons/filter.svg';
 import plus from '@/public/Icons/plus.svg';
