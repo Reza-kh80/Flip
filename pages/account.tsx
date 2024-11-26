@@ -14,6 +14,7 @@ interface User {
     id: number;
     email: string;
     password: string;
+    profile_picture: string | null;
     access_token: string;
     refresh_token: string;
     created_at: number | null;

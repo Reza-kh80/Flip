@@ -109,6 +109,7 @@ interface User {
     id: number;
     email: string;
     password: string;
+    profile_picture: string | null;
     access_token: string;
     refresh_token: string;
     created_at: number | null;
@@ -151,18 +152,26 @@ const AccountStructure = memo(({ user, createAlert }: AccountStructureProps) => 
         }
     }, [password, createAlert, push]);
 
-    const handlePhotoUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const handlePhotoUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                setUserPhoto(base64String);
-                localStorage.setItem('userPhoto', base64String);
-            };
-            reader.readAsDataURL(file);
+            const formData = new FormData();
+            formData.append('profile_picture', file);
+
+            try {
+                const response = await axiosInstance.post('/users/update-profile-picture', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    }
+                });
+
+                setUserPhoto(response.data.profile_picture);
+                createAlert('Profile picture updated successfully_success', 5);
+            } catch (error) {
+                createAlert('Failed to update profile picture_error', 5);
+            }
         }
-    }, []);
+    }, [createAlert]);
 
     useEffect(() => {
         const addUpdate = () => {
@@ -196,11 +205,11 @@ const AccountStructure = memo(({ user, createAlert }: AccountStructureProps) => 
                     <label htmlFor="photo-upload">
                         <Box sx={{ position: 'relative' }}>
                             <Avatar
-                                src={userPhoto || undefined}
+                                src={user.profile_picture || userPhoto || undefined}
                                 sx={{ width: 120, height: 120, cursor: 'pointer' }}
                                 alt={user.email}
                             >
-                                {!userPhoto && user.email.charAt(0)}
+                                {!user.profile_picture && !userPhoto && user.email?.charAt(0)}
                             </Avatar>
                             <Box
                                 sx={{
