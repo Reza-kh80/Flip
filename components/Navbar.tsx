@@ -8,6 +8,7 @@ import category from '@/public/Icons/category.svg';
 import search from '@/public/Icons/search.svg';
 import filter from '@/public/Icons/filter.svg';
 import plus from '@/public/Icons/plus.svg';
+import home from '@/public/Icons/home.svg';
 
 const Navbar = () => {
     const { asPath } = useRouter();
@@ -36,8 +37,13 @@ const Navbar = () => {
                     </Link>
                 </li>
                 <li>
-                    <Link href='/search' aria-label='Search'>   
+                    <Link href='/search' aria-label='Search'>
                         <Image priority src={search} alt="Search" width="32" height="32" className={currentPath === '/search' ? "opacity-100" : "opacity-50"} />
+                    </Link>
+                </li>
+                <li>
+                    <Link href='/' aria-label='Setting'>
+                        <Image priority src={home} alt='home' width={32} height={32} className={currentPath === '/' ? "opacity-100" : "opacity-50"} />
                     </Link>
                 </li>
             </ul>

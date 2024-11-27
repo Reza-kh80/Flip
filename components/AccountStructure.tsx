@@ -7,6 +7,7 @@ import {
     IconButton,
     Avatar,
     Tooltip,
+    Input,
 } from '@mui/material';
 import { CreateAlertFunction } from "@/types/common";
 import axiosInstance from '@/helper/axiosInstance';
@@ -155,6 +156,20 @@ const AccountStructure = memo(({ user, createAlert }: AccountStructureProps) => 
     const handlePhotoUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!validTypes.includes(file.type)) {
+                createAlert('Please upload only JPG or PNG images_error', 5);
+                return;
+            }
+
+            // Check file size (optional, set to 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if (file.size > maxSize) {
+                createAlert('File size should be less than 5MB_error', 5);
+                return;
+            }
+
             const formData = new FormData();
             formData.append('profile_picture', file);
 
@@ -226,10 +241,12 @@ const AccountStructure = memo(({ user, createAlert }: AccountStructureProps) => 
                         </Box>
                     </label>
                 </Tooltip>
-                <input
+                <Input
                     type="file"
                     id="photo-upload"
-                    accept="image/*"
+                    inputProps={{
+                        accept: '.jpg,.jpeg,.png'
+                    }}
                     style={{ display: 'none' }}
                     onChange={handlePhotoUpload}
                 />
