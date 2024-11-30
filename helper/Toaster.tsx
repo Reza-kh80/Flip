@@ -61,7 +61,7 @@ function isAlertColor(severity: string): severity is 'error' | 'warning' | 'info
 export default function Toaster({
     message,
     severity,
-    position = { vertical: 'bottom', horizontal: 'left' },
+    position = { vertical: 'top', horizontal: 'left' },
     autoHideDuration = 5000
 }: ToasterProps) {
     if (!isAlertColor(severity)) {

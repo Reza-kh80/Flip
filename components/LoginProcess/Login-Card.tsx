@@ -75,10 +75,6 @@ const Login_Card = ({ createAlert }: ComponentProps) => {
     // Session monitoring
     useEffect(() => {
 
-        if (status === 'unauthenticated') {
-            createAlert('Sorry, you must be logged in to access this page._warning', 5);
-        }
-
         if (!session) return;
 
         const checkSession = async () => {
@@ -150,33 +146,6 @@ const Login_Card = ({ createAlert }: ComponentProps) => {
             createAlert("An error occurred. Please try again._error", 5);
         }
 
-        // try {
-        //     const response = await axiosInstance.post('/users/login', {
-        //         email,
-        //         password
-        //     });
-
-        //     // Store both tokens
-        //     setCookie("accessToken", response.data.accessToken);
-        //     setCookie("refreshToken", response.data.refreshToken);
-
-        //     // Update axios instance to use the new access token
-        //     axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
-        //     createAlert(response.data.message + '_success', 3)
-        //     router.push('/');
-        // } catch (error: any) {
-        //     if (error.response) {
-        //         switch (error.response.status) {
-        //             case 401:
-        //                 createAlert('Password is incorrect!_error', 3)
-        //             case 404:
-        //                 createAlert('User does not exist!_error', 3)
-        //                 break;
-        //             default:
-        //                 createAlert('An error occurred. Please try again._error', 3)
-        //         }
-        //     }
-        // }
     };
 
     const handleSignUpSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -208,24 +177,31 @@ const Login_Card = ({ createAlert }: ComponentProps) => {
         }
 
         try {
+            console.log('Attempting registration with:', { email: email }); // Log registration attempt
+
             const response = await axiosInstance.post('/users/signup', {
                 email: signUpEmail,
-                password: signUpPassword
+                password: signUpPassword,
             });
 
-            // Store both tokens
-            setCookie("accessToken", response.data.accessToken);
-            setCookie("refreshToken", response.data.refreshToken);
-
-            // Update axios instance to use the new access token
-            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
-            createAlert(response.data.message + '_success', 3)
-            router.push('/flip');
-        } catch (error: any) {
-            if (error.response && error.response.status === 409) {
-                createAlert('Email address is already in use._error', 3);
+            if (response.data) {
+                router.push('/login?registered=true');
+                createAlert(response.data.message + "_success", 5);
+                handleToggleForm();
             } else {
-                createAlert('An error occurred. Please try again._error', 3);
+                createAlert("Registration failed: No response data received_error", 5);
+            }
+        } catch (err: any) {
+            createAlert(err.message + "_error", 5);
+
+            if (err.response?.status === 409) {
+                createAlert("This email is already registered_error", 5);
+            } else if (err.response?.data?.message) {
+                createAlert(`Registration failed: ${err.response.data.message}` + "_error", 5);
+            } else if (err.message === 'Network Error') {
+                createAlert("Connection failed. Please check your internet connection._error", 5);
+            } else {
+                createAlert("Registration failed. Please try again later._error", 5);
             }
         }
     };

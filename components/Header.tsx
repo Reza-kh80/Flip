@@ -8,9 +8,11 @@ import { useSessionMonitor } from "@/helper/auth-protection";
 import {
     Avatar,
     Box,
+    Button
 } from "@mui/material";
 import Image from "next/image";
 import Link from "next/link";
+import LoginIcon from '@mui/icons-material/Login';
 
 interface ComponentProps {
     createAlert: CreateAlertFunction;
@@ -65,8 +67,33 @@ const Header = ({ createAlert }: ComponentProps) => {
                 {loading ? (
                     <Box sx={{ width: 70, height: 70 }} /> // Placeholder while loading
                 ) : status == 'unauthenticated' ? (
-                    <Link href='/login' className="fw-bold" style={{ color: '#133266', fontSize: '14pt' }}>
-                        Log In
+                    <Link href='/login' style={{ textDecoration: 'none' }}>
+                        <Button
+                            variant="contained"
+                            startIcon={<LoginIcon />}
+                            sx={{
+                                backgroundColor: '#133266',
+                                color: 'white',
+                                fontWeight: 'bold',
+                                padding: '10px 20px',
+                                borderRadius: '25px',
+                                textTransform: 'none',
+                                fontSize: '14px',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                transition: 'all 0.3s ease',
+                                '&:hover': {
+                                    backgroundColor: '#1a4485',
+                                    transform: 'translateY(-2px)',
+                                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                                },
+                                '&:active': {
+                                    transform: 'translateY(0)',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                }
+                            }}
+                        >
+                            Log In
+                        </Button>
                     </Link>
                 ) : (
                     <Box>
