@@ -1,7 +1,8 @@
-import React from 'react';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
-import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
 import { CreateAlertFunction } from '@/types/common';
+import axiosInstance from '@/helper/axiosInstance';
+import { getSession } from 'next-auth/react';
+import React from 'react';
 
 // import MUI Components
 import { Container } from '@mui/material';
@@ -52,10 +53,26 @@ const Search = ({ data, createAlert }: Props) => {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
-    const axiosInstance = axiosInstanceSSR(context as any);
 
     try {
-        const response = await axiosInstance.get<Card[]>(`/card/get-all-cards`);
+        const session = await getSession(context);
+
+        if (!session) {
+            return {
+                redirect: {
+                    destination: '/login',
+                    permanent: false,
+                },
+            };
+        }
+
+        // Pass the cookie header to maintain session in SSR
+        const response = await axiosInstance.get<Card[]>(`/card/get-all-cards`, {
+            headers: {
+                cookie: context.req.headers.cookie || '',
+            },
+        });
+
         return {
             props: {
                 data: {
@@ -65,20 +82,20 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
         };
     } catch (error: any) {
         if (error.response && error.response.status === 401) {
+            // Redirect to login page if unauthorized
             return {
                 redirect: {
-                    destination: '/',
+                    destination: '/login',
                     permanent: false,
                 },
             };
         }
-
         return {
             props: {
                 data: {
                     initialBoxes: []
                 }
-            }
+            },
         };
     }
 };

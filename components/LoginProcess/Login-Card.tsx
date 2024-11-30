@@ -1,7 +1,9 @@
+import { useSessionMonitor } from "@/helper/auth-protection";
 import { CreateAlertFunction } from "@/types/common";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { setCookie } from 'cookies-next';
+import { signOut, signIn } from "next-auth/react";
 
 // import axios
 import axiosInstance from '@/helper/axiosInstance';
@@ -41,6 +43,7 @@ const fadeOut = keyframes`
 `;
 
 const Login_Card = ({ createAlert }: ComponentProps) => {
+    const { session, status } = useSessionMonitor();
     const router = useRouter();
 
     // import state of log-in    
@@ -69,6 +72,46 @@ const Login_Card = ({ createAlert }: ComponentProps) => {
         return emailRegex.test(email);
     };
 
+    // Session monitoring
+    useEffect(() => {
+
+        if (status === 'unauthenticated') {
+            createAlert('Sorry, you must be logged in to access this page._warning', 5);
+        }
+
+        if (!session) return;
+
+        const checkSession = async () => {
+            // Ensure refreshTokenExpiry is defined
+            const refreshTokenExpiryTime = session.refreshTokenExpiry;
+            if (refreshTokenExpiryTime === undefined) {
+                createAlert('Session information is incomplete. Please log in again._warning', 5);
+                await signOut({ redirect: false });
+                router.push('/login');
+                return;
+            }
+
+            const timeUntilExpiry = refreshTokenExpiryTime - Date.now();
+
+            if (timeUntilExpiry <= 5000 && timeUntilExpiry > 0) { // 5 seconds before expiry
+                createAlert('Your session will expire soon. You will be logged out automatically._warning', 5);
+            }
+
+            // If refresh token has expired or will expire in less than 0 seconds
+            if (timeUntilExpiry <= 0) {
+                createAlert('Your session has expired. Please log in again._warning', 5);
+                await signOut({ redirect: false });
+                router.push('/login');
+            }
+        };
+
+        // Check session every second
+        const intervalId = setInterval(checkSession, 1000);
+
+        // Cleanup interval on component unmount
+        return () => clearInterval(intervalId);
+    }, [session, router, createAlert]);
+
     const handleLoginSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setEmailError('');
@@ -91,32 +134,49 @@ const Login_Card = ({ createAlert }: ComponentProps) => {
         }
 
         try {
-            const response = await axiosInstance.post('/users/login', {
-                email,
-                password
+            const result = await signIn('credentials', {
+                email: email,
+                password: password,
+                redirect: false,
             });
 
-            // Store both tokens
-            setCookie("accessToken", response.data.accessToken);
-            setCookie("refreshToken", response.data.refreshToken);
-
-            // Update axios instance to use the new access token
-            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
-            createAlert(response.data.message + '_success', 3)
-            router.push('/');
-        } catch (error: any) {
-            if (error.response) {
-                switch (error.response.status) {
-                    case 401:
-                        createAlert('Password is incorrect!_error', 3)
-                    case 404:
-                        createAlert('User does not exist!_error', 3)
-                        break;
-                    default:
-                        createAlert('An error occurred. Please try again._error', 3)
-                }
+            if (result?.error) {
+                createAlert("Invalid credentials_error", 5);
+            } else {
+                createAlert("Successfully logged in_success", 5);
+                router.push("/");
             }
+        } catch (error) {
+            createAlert("An error occurred. Please try again._error", 5);
         }
+
+        // try {
+        //     const response = await axiosInstance.post('/users/login', {
+        //         email,
+        //         password
+        //     });
+
+        //     // Store both tokens
+        //     setCookie("accessToken", response.data.accessToken);
+        //     setCookie("refreshToken", response.data.refreshToken);
+
+        //     // Update axios instance to use the new access token
+        //     axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${response.data.accessToken}`;
+        //     createAlert(response.data.message + '_success', 3)
+        //     router.push('/');
+        // } catch (error: any) {
+        //     if (error.response) {
+        //         switch (error.response.status) {
+        //             case 401:
+        //                 createAlert('Password is incorrect!_error', 3)
+        //             case 404:
+        //                 createAlert('User does not exist!_error', 3)
+        //                 break;
+        //             default:
+        //                 createAlert('An error occurred. Please try again._error', 3)
+        //         }
+        //     }
+        // }
     };
 
     const handleSignUpSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

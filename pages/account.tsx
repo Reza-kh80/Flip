@@ -1,5 +1,6 @@
-import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
 import { CreateAlertFunction } from "@/types/common";
+import axiosInstance from "@/helper/axiosInstance";
+import { getSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 import React from 'react';
 
@@ -42,30 +43,36 @@ const Account = ({ createAlert, user }: AccountStructureProps) => {
 }
 
 export const getServerSideProps: GetServerSideProps<{ user: User }> = async (context) => {
-    const axiosInstance = axiosInstanceSSR(context as any);
 
     try {
-        const response = await axiosInstance.get<User>('/users/profile');
-        return {
-            props: {
-                user: response.data,
-            },
-        };
-    } catch (error: any) {
-        if (error.response && error.response.status === 401) {
-            // Redirect to login page if unauthorized
+        const session = await getSession(context);
+
+        if (!session) {
             return {
                 redirect: {
-                    destination: '/',
+                    destination: '/login',
                     permanent: false,
                 },
             };
         }
 
-        // Return empty user object if there's an error
+        // Pass the cookie header to maintain session in SSR
+        const response = await axiosInstance.get<User>('/users/profile', {
+            headers: {
+                cookie: context.req.headers.cookie || '',
+            },
+        });
+
         return {
             props: {
-                user: {} as User,
+                user: response.data,
+            },
+        };
+    } catch (error) {
+        return {
+            redirect: {
+                destination: '/login',
+                permanent: false,
             },
         };
     }

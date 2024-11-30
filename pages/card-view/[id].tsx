@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
-import Image from 'next/image';
-import { useRouter } from 'next/router';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
-import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
 import { CreateAlertFunction } from '@/types/common';
+import axiosInstance from '@/helper/axiosInstance';
+import { getSession } from 'next-auth/react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/router';
+import Image from 'next/image';
 
 // import MUI Components
 import { Container } from '@mui/material';
@@ -90,14 +91,29 @@ const CardView = ({ data, createAlert }: Props) => {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
-    const axiosInstance = axiosInstanceSSR(context as any);
 
     const { resolvedUrl } = context;
     const url_details = decodeURIComponent(resolvedUrl).split('/');
     const title = url_details[url_details.length - 1];
 
     try {
-        const response = await axiosInstance.get<Card[]>(`/card/due/${title}`);
+        const session = await getSession(context);
+
+        if (!session) {
+            return {
+                redirect: {
+                    destination: '/login',
+                    permanent: false,
+                },
+            };
+        }
+
+        const response = await axiosInstance.get<Card[]>(`/card/due/${title}`, {
+            headers: {
+                cookie: context.req.headers.cookie || '',
+            },
+        });
+
         return {
             props: {
                 data: {
@@ -108,14 +124,14 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
         };
     } catch (error: any) {
         if (error.response && error.response.status === 401) {
+            // Redirect to login page if unauthorized
             return {
                 redirect: {
-                    destination: '/',
+                    destination: '/login',
                     permanent: false,
                 },
             };
         }
-
         return {
             props: {
                 data: {

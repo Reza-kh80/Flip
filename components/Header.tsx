@@ -2,6 +2,7 @@ import React, { useState, Fragment, useEffect } from "react";
 import { CreateAlertFunction } from "@/types/common";
 import axiosInstance from "@/helper/axiosInstance";
 import { getCookie } from "cookies-next";
+import { useSessionMonitor } from "@/helper/auth-protection";
 
 // import components
 import {
@@ -28,6 +29,9 @@ const Header = ({ createAlert }: ComponentProps) => {
     const [token, setToken] = useState<boolean>();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const { status } = useSessionMonitor();
+
+
 
     const fetchUserProfile = async () => {
         try {
@@ -42,11 +46,9 @@ const Header = ({ createAlert }: ComponentProps) => {
     };
 
     useEffect(() => {
-        const accessToken = getCookie('accessToken');
-        setToken(accessToken !== undefined);
-
-        if (accessToken) {
+        if (status === 'authenticated') {
             fetchUserProfile();
+            setToken(true);
         } else {
             setLoading(false);
         }
@@ -62,7 +64,7 @@ const Header = ({ createAlert }: ComponentProps) => {
             <div className='d-flex flex-row justify-content-between align-items-center'>
                 {loading ? (
                     <Box sx={{ width: 70, height: 70 }} /> // Placeholder while loading
-                ) : !token ? (
+                ) : status == 'unauthenticated' ? (
                     <Link href='/login' className="fw-bold" style={{ color: '#133266', fontSize: '14pt' }}>
                         Log In
                     </Link>

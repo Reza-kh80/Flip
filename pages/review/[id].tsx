@@ -1,6 +1,7 @@
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
-import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
 import { CreateAlertFunction } from '@/types/common';
+import axiosInstance from '@/helper/axiosInstance';
+import { getSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import React from 'react';
@@ -85,11 +86,28 @@ const Review = ({ data, createAlert }: Props) => {
 }
 
 export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context) => {
-    const axiosInstance = axiosInstanceSSR(context as any);
+
     const title = context.resolvedUrl.split('/')[2];
 
     try {
-        const response = await axiosInstance.get<Card[]>(`/card/get-cards/${title}`);
+        const session = await getSession(context);
+
+        if (!session) {
+            return {
+                redirect: {
+                    destination: '/login',
+                    permanent: false,
+                },
+            };
+        }
+
+        // Pass the cookie header to maintain session in SSR
+        const response = await axiosInstance.get<Card[]>(`/card/get-cards/${title}`, {
+            headers: {
+                cookie: context.req.headers.cookie || '',
+            },
+        });
+
         return {
             props: {
                 data: {
@@ -103,19 +121,18 @@ export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context)
             // Redirect to login page if unauthorized
             return {
                 redirect: {
-                    destination: '/',
+                    destination: '/login',
                     permanent: false,
                 },
             };
         }
-        // Return a default props object if there's an error
         return {
             props: {
                 data: {
                     title: '',
                     initialBoxes: []
                 }
-            }
+            },
         };
     }
 };

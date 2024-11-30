@@ -1,6 +1,6 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { CreateAlertFunction } from "@/types/common";
-import { deleteCookie } from "cookies-next";
+import { signOut } from "next-auth/react";
 import { useRouter } from "next/router";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,12 +38,10 @@ const SettingStructure = ({ createAlert }: ComponentProps) => {
     }, []);
 
     const handleLogOut = () => {
-        axiosInstance.post('/users/logout').then((res) => {
+        axiosInstance.post('/users/logout').then(async (res) => {
             if (res.status === 200) {
-                deleteCookie('accessToken');
-                deleteCookie('refreshToken');
+                await signOut({ redirect: true, callbackUrl: '/' });
                 createAlert(res.data.message + '_success', 5);
-                route.push('/');
             } else if (res.status = 404) {
                 createAlert("User not found!_error", 5);
             }

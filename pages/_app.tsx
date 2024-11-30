@@ -1,4 +1,5 @@
 import { CreateAlertFunction } from "@/types/common";
+import { SessionProvider } from "next-auth/react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useState, useMemo } from 'react';
 import type { AppProps } from "next/app";
@@ -16,7 +17,7 @@ type CustomAppProps = AppProps & {
   };
 };
 
-export default function App({ Component, pageProps }: CustomAppProps) {
+export default function App({ Component, pageProps: { session, ...pageProps } }: CustomAppProps) {
   const [alertState, setAlertState] = useState<string>('');
 
   const createAlert = (alertType: string, destroyAfterInSeconds: number) => {
@@ -88,7 +89,9 @@ export default function App({ Component, pageProps }: CustomAppProps) {
         ))}
       </Head>
       {alertState.length ? alertElement : ''}
-      <Component createAlert={createAlert} {...pageProps} />
+      <SessionProvider session={session}>
+        <Component createAlert={createAlert} {...pageProps} />
+      </SessionProvider>
     </CheckProvider>
   )
 }

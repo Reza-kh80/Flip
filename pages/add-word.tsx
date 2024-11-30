@@ -1,6 +1,7 @@
-import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
 import { CreateAlertFunction } from '@/types/common';
+import axiosInstance from '@/helper/axiosInstance';
 import { GetServerSideProps } from 'next';
+import { getSession } from 'next-auth/react';
 import React from 'react';
 
 // import MUI Components
@@ -49,10 +50,25 @@ const AddWord = ({ initialBoxes, createAlert }: AddWordProps) => {
 }
 
 export const getServerSideProps: GetServerSideProps<{ initialBoxes: Box[] }> = async (context) => {
-    const axiosInstance = axiosInstanceSSR(context as any);
 
     try {
-        const response = await axiosInstance.get<Box[]>('/boxes/get-all');
+        const session = await getSession(context);
+
+        if (!session) {
+            return {
+                redirect: {
+                    destination: '/login',
+                    permanent: false,
+                },
+            };
+        }
+
+        const response = await axiosInstance.get<Box[]>('/boxes/get-all', {
+            headers: {
+                cookie: context.req.headers.cookie || '',
+            },
+        });
+
         return {
             props: {
                 initialBoxes: response.data,
@@ -60,9 +76,10 @@ export const getServerSideProps: GetServerSideProps<{ initialBoxes: Box[] }> = a
         };
     } catch (error: any) {
         if (error.response && error.response.status === 401) {
+            // Redirect to login page if unauthorized
             return {
                 redirect: {
-                    destination: '/',
+                    destination: '/login',
                     permanent: false,
                 },
             };

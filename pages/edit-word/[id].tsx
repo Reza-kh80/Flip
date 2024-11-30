@@ -2,7 +2,8 @@ import React from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { GetServerSideProps, GetServerSidePropsContext } from 'next';
-import { axiosInstanceSSR } from '@/helper/axiosInstanceSSR';
+import axiosInstance from '@/helper/axiosInstance';
+import { getSession } from 'next-auth/react';
 import { CreateAlertFunction } from '@/types/common';
 import { Container } from '@mui/material';
 import Layout from '@/components/Layout';
@@ -79,15 +80,33 @@ const EditWord = ({ card, initialBoxes, createAlert }: EditWordProps) => {
 }
 
 export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context) => {
-    const axiosInstance = axiosInstanceSSR(context as any);
     const { resolvedUrl } = context;
 
     const url_details = decodeURIComponent(resolvedUrl).split('/');
     const id = parseInt(url_details[2].split('-')[2]);
 
     try {
-        const response = await axiosInstance.get<Card>(`/card/get-card/${id}`);
-        const responseBox = await axiosInstance.get<Box[]>('/boxes/get-all');
+        const session = await getSession(context);
+
+        if (!session) {
+            return {
+                redirect: {
+                    destination: '/login',
+                    permanent: false,
+                },
+            };
+        }
+
+        const response = await axiosInstance.get<Card>(`/card/get-card/${id}`, {
+            headers: {
+                cookie: context.req.headers.cookie || '',
+            },
+        });
+        const responseBox = await axiosInstance.get<Box[]>('/boxes/get-all', {
+            headers: {
+                cookie: context.req.headers.cookie || '',
+            },
+        });
 
         return {
             props: {
@@ -97,15 +116,14 @@ export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context)
         };
     } catch (error: any) {
         if (error.response && error.response.status === 401) {
+            // Redirect to login page if unauthorized
             return {
                 redirect: {
-                    destination: '/',
+                    destination: '/login',
                     permanent: false,
                 },
             };
         }
-
-        // Create a default Card object that matches the Card interface
         const defaultCard: Card = {
             id: 0,
             box_id: 0,
