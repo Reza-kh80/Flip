@@ -132,6 +132,14 @@ const AccountStructure = memo(({ user, createAlert }: AccountStructureProps) => 
         typeof window !== 'undefined' ? localStorage.getItem('userPhoto') : null
     );
 
+    const [height, setHeight] = useState(0);
+    useEffect(() => {
+        const handleResize = () => setHeight(window.innerHeight);
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const handlePasswordChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const newPassword = event.target.value;
         setPassword(newPassword);
@@ -214,7 +222,7 @@ const AccountStructure = memo(({ user, createAlert }: AccountStructureProps) => 
     }, []);
 
     return (
-        <Box component="form" role='form' data-testid="account-form" sx={{ mt: 4, maxWidth: 'sm', mx: 'auto', p: 3 }} onSubmit={handleSaveChanges}>
+        <Box component="form" role='form' data-testid="account-form" onSubmit={handleSaveChanges} noValidate sx={{ height: `${height - 150}px`, mt: 4, maxWidth: 'sm', mx: 'auto', p: 3 }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, mb: 5 }}>
                 <Tooltip title="Upload Photo">
                     <label htmlFor="photo-upload">
