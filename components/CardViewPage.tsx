@@ -19,6 +19,7 @@ import { Box, Button, Grid } from '@mui/material';
 
 // import SVG
 import volumeUp from '../public/Icons/volume-up.svg';
+import starfill from '../public/Icons/starfill.svg';
 import happy from '../public/Icons/happy.svg';
 import edit from '../public/Icons/edit.svg';
 import star from '../public/Icons/star.svg';
@@ -61,6 +62,15 @@ const CardViewPage = ({ data, createAlert }: Props) => {
     const [isFlipped, setIsFlipped] = useState<boolean>(false);
     const [height, setHeight] = useState<number>(0);
     const [startTime, setStartTime] = useState<number>(0);
+    const [favorites, setFavorites] = useState<{ [key: number]: boolean }>({});
+
+    useEffect(() => {
+        const initialFavorites = data.initialBoxes.reduce((acc, card) => {
+            acc[card.id] = card.is_favorite;
+            return acc;
+        }, {} as { [key: number]: boolean });
+        setFavorites(initialFavorites);
+    }, [data.initialBoxes]);
 
     useEffect(() => {
         const handleResize = () => setHeight(window.innerHeight);
@@ -82,6 +92,29 @@ const CardViewPage = ({ data, createAlert }: Props) => {
         push(`/edit-word/${label}-${data.title}-${id}`);
         localStorage.setItem('path', asPath);
     }, [push, asPath, data.title]);
+
+    const handleFavoriteClick = (id: number) => {
+        const newFavoriteState = !favorites[id];
+
+        setFavorites(prev => ({
+            ...prev,
+            [id]: newFavoriteState
+        }));
+
+        axiosInstance.patch(`/card/set-favorite/${id}`, {
+            is_favorite: newFavoriteState
+        })
+            .then((res) => {
+                createAlert(res.data.message + '_success', 5);
+            })
+            .catch((error) => {
+                setFavorites(prev => ({
+                    ...prev,
+                    [id]: !newFavoriteState
+                }));
+                createAlert('An error occurred. Please try again._error', 5);
+            });
+    };
 
     const handleFlip = () => {
         setIsFlipped(!isFlipped);
@@ -149,8 +182,12 @@ const CardViewPage = ({ data, createAlert }: Props) => {
         <div className={`card-face card-${isFront ? 'front' : 'back'}`}>
             <Box className='d-flex flex-row-reverse justify-content-between w-100 align-items-center'>
                 <section>
-                    <Button style={{ minWidth: '0' }}>
-                        <Image priority src={star} alt="star" height={24} width={24} />
+                    <Button style={{ minWidth: '0' }} onClick={() => handleFavoriteClick(slide.id)}>
+                        {favorites[slide.id] ? (
+                            <Image priority src={starfill} alt="starFill" height={24} width={24} />
+                        ) : (
+                            <Image priority src={star} alt="star" height={24} width={24} />
+                        )}
                     </Button>
                     <Button style={{ minWidth: '0' }} onClick={() => handleEditClick(slide.front, slide.id)}>
                         <Image priority src={edit} alt="edit" height={24} width={24} />
