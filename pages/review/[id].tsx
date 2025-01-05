@@ -40,6 +40,9 @@ interface Props {
     data: {
         title: string;
         initialBoxes: Card[];
+        totalPages: number;
+        currentPage: number;
+        totalCards: number;
     };
     createAlert: CreateAlertFunction;
 }
@@ -48,6 +51,9 @@ interface Props_SSR {
     data: {
         title: string;
         initialBoxes: Card[];
+        totalPages: number;
+        currentPage: number;
+        totalCards: number;
     };
 }
 
@@ -64,7 +70,7 @@ const Review = ({ data, createAlert }: Props) => {
     }
 
     return (
-        <Layout title={`Review – ${data.title}`}>
+        <Layout title={`Review – ${data.title.split('?')[0]}`}>
             <main className='bg-search'>
                 <Container maxWidth='sm' className='p-4'>
                     <div className='d-flex flex-row align-items-center justify-content-between'>
@@ -72,13 +78,19 @@ const Review = ({ data, createAlert }: Props) => {
                             <Image priority src={leftSquare} alt='left-square' width={32} height={32} />
                         </span>
                         <h2 className='fw-bold' style={{ color: '#133266' }}>
-                            {data.title}
+                            {data.title.split('?')[0]}
                         </h2>
                         <span className='cursor-pointer' onClick={goToCardView}>
                             <Image priority src={play} alt='play' width={32} height={32} />
                         </span>
                     </div>
-                    <ReviewPage createAlert={createAlert} cards={data.initialBoxes} />
+                    <ReviewPage
+                        createAlert={createAlert}
+                        cards={data.initialBoxes}
+                        totalPages={data.totalPages}
+                        currentPage={data.currentPage}
+                        totalCards={data.totalCards}
+                    />
                 </Container>
             </main>
         </Layout>
@@ -86,8 +98,8 @@ const Review = ({ data, createAlert }: Props) => {
 }
 
 export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context) => {
-
     const title = context.resolvedUrl.split('/')[2];
+    const page = context.query.page ? Number(context.query.page) : 1;
 
     try {
         const session = await getSession(context);
@@ -101,24 +113,29 @@ export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context)
             };
         }
 
-        // Pass the cookie header to maintain session in SSR
-        const response = await axiosInstance.get<Card[]>(`/card/get-cards/${title}`, {
+        const response = await axiosInstance.get(`/card/get-cards/${title}`, {
             headers: {
                 cookie: context.req.headers.cookie || '',
             },
+            params: {
+                page,
+                limit: 10
+            }
         });
 
         return {
             props: {
                 data: {
                     title,
-                    initialBoxes: response.data
+                    initialBoxes: response.data.cards,
+                    totalPages: response.data.totalPages,
+                    currentPage: response.data.currentPage,
+                    totalCards: response.data.totalCards
                 }
             },
         };
     } catch (error: any) {
         if (error.response && error.response.status === 401) {
-            // Redirect to login page if unauthorized
             return {
                 redirect: {
                     destination: '/login',
@@ -130,7 +147,10 @@ export const getServerSideProps: GetServerSideProps<Props_SSR> = async (context)
             props: {
                 data: {
                     title: '',
-                    initialBoxes: []
+                    initialBoxes: [],
+                    totalPages: 0,
+                    currentPage: 1,
+                    totalCards: 0
                 }
             },
         };

@@ -27,7 +27,8 @@ interface UseSwipeOptions {
     completedThreshold?: number;
 }
 
-const ListItem = ({ id, name, _count, index, onCompleteLeft, onCompleteRight }: ListItemProps) => {
+const ListItem = ({ id, name, _count, index, created_at, onCompleteLeft, onCompleteRight }: ListItemProps) => {
+
     const { push } = useRouter();
 
     // states of undo
@@ -35,6 +36,30 @@ const ListItem = ({ id, name, _count, index, onCompleteLeft, onCompleteRight }: 
     const [openUndo, setOpenUndo] = useState<boolean>(false);
     const [counter, setCounter] = useState<number>(0);
     const timerRef = useRef<number | null>(null);
+
+    const getTimeAgo = (timestamp: number): string => {
+        const now = Date.now();
+        const diffInSeconds = Math.floor((now - timestamp) / 1000);
+        const diffInMinutes = Math.floor(diffInSeconds / 60);
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        const diffInDays = Math.floor(diffInHours / 24);
+        const diffInMonths = Math.floor(diffInDays / 30);
+        const diffInYears = Math.floor(diffInDays / 365);
+
+        if (diffInYears > 0) {
+            return `${diffInYears}y ago`;
+        } else if (diffInMonths > 0) {
+            return `${diffInMonths}mo ago`;
+        } else if (diffInDays > 0) {
+            return `${diffInDays}d ago`;
+        } else if (diffInHours > 0) {
+            return `${diffInHours}h ago`;
+        } else if (diffInMinutes > 0) {
+            return `${diffInMinutes}m ago`;
+        } else {
+            return 'just now';
+        }
+    };
 
     const handleUndo = (event: React.SyntheticEvent | Event, reason?: string) => {
         if (reason === 'clickaway') {
@@ -240,12 +265,12 @@ const ListItem = ({ id, name, _count, index, onCompleteLeft, onCompleteRight }: 
 
     return (
         <Fragment>
-            <div className="list-item" style={index !== 0 ? { margin: '-20px 0' } : { marginTop: '0' }} /*onClick={() => goToReviewPage(label)}*/>
+            <div className="list-item" style={index !== 0 ? { margin: '-20px 0' } : { marginTop: '0' }}>
                 <div className='card-global-page-home mt-4' ref={ref}>
                     <h3 className='fw-bold'>{name}</h3>
                     <div className='d-flex flex-row justify-content-between align-items-center mt-3'>
                         <span>{_count.cards} Cards</span>
-                        <span className='border-3d'>3d</span>
+                        <span className='border-3d'>{getTimeAgo(created_at)}</span>
                     </div>
                 </div>
                 <div className="list-item__option">

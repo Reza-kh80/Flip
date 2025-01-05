@@ -66,12 +66,12 @@ interface Props {
     cards: Card[];
     createAlert: CreateAlertFunction;
     totalPages: number;
+    currentPage: number;
+    totalCards: number;
 }
 
-const ReviewPage = ({ cards, createAlert, totalPages }: Props) => {
-    const { push, asPath } = useRouter();
-    const ITEMS_PER_PAGE = 10;
-
+const ReviewPage = ({ cards, createAlert, totalPages, currentPage: initialPage }: Props) => {
+    const { push, asPath, query } = useRouter();
     const [isFocused, setIsFocused] = useState(false);
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
     const [card, setCard] = useState<Card[]>(cards);
@@ -79,16 +79,17 @@ const ReviewPage = ({ cards, createAlert, totalPages }: Props) => {
     const [filteredOptions, setFilteredOptions] = useState<Card[]>([]);
     const [deleteId, setDeleteId] = useState<number | string | null>(null);
     const [height, setHeight] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(initialPage);
     const [loading, setLoading] = useState(false);
 
     const fetchCards = useCallback(async (page: number) => {
         setLoading(true);
         try {
-            const response = await axiosInstance.get('/card/get-all-cards', {
+            const boxName = asPath.split('/')[2];
+            const response = await axiosInstance.get(`/card/get-cards/${boxName}`, {
                 params: {
                     page,
-                    limit: ITEMS_PER_PAGE
+                    limit: 10
                 }
             });
             setCard(response.data.cards);
@@ -97,7 +98,7 @@ const ReviewPage = ({ cards, createAlert, totalPages }: Props) => {
             createAlert('Failed to fetch cards._error', 5);
             setLoading(false);
         }
-    }, [createAlert]);
+    }, [asPath, createAlert]);
 
     useEffect(() => {
         fetchCards(currentPage);
@@ -116,8 +117,15 @@ const ReviewPage = ({ cards, createAlert, totalPages }: Props) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
+    const handlePageChange = async (_event: React.ChangeEvent<unknown>, page: number) => {
+        setLoading(true);
+        const baseUrl = asPath.split('?')[0];
+        await push({
+            pathname: baseUrl,
+            query: { ...query, page }
+        });
         setCurrentPage(page);
+        setLoading(false);
     };
 
     const handleChange = useCallback(
@@ -138,13 +146,11 @@ const ReviewPage = ({ cards, createAlert, totalPages }: Props) => {
                 const res = await axiosInstance.delete(`/card/delete-card/${deleteId}`);
                 if (res.status === 204) {
                     createAlert("Word deleted successfully!_success", 5);
-                    // Refresh the current page after deletion
                     await fetchCards(currentPage);
                 }
             } catch (error) {
                 createAlert('An error occurred. Please try again._error', 5);
             }
-
             setOpenModal(false);
             setDeleteId(null);
         }
