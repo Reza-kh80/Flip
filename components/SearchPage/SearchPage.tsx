@@ -13,9 +13,10 @@ import {
     Box,
     AutocompleteChangeReason,
     AutocompleteChangeDetails,
+    Pagination,
 } from '@mui/material';
 
-import ListItemBox from './ListItemBox';
+import ListItemBox from '../CommonList';
 import searchInput from '@/public/Icons/search-input.svg';
 
 const shakeLabel = keyframes`
@@ -64,10 +65,12 @@ interface Card {
 interface Props {
     cards: Card[];
     createAlert: CreateAlertFunction;
+    totalPages: number;
 }
 
-const CardReviewPage = ({ cards, createAlert }: Props) => {
+const SearchPage = ({ cards, createAlert, totalPages }: Props) => {
     const { push, asPath } = useRouter();
+    const ITEMS_PER_PAGE = 10;
 
     const [isFocused, setIsFocused] = useState(false);
     const [selectedCard, setSelectedCard] = useState<Card | null>(null);
@@ -76,6 +79,29 @@ const CardReviewPage = ({ cards, createAlert }: Props) => {
     const [filteredOptions, setFilteredOptions] = useState<Card[]>([]);
     const [deleteId, setDeleteId] = useState<number | string | null>(null);
     const [height, setHeight] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+
+    const fetchCards = useCallback(async (page: number) => {
+        setLoading(true);
+        try {
+            const response = await axiosInstance.get('/card/get-all-cards', {
+                params: {
+                    page,
+                    limit: ITEMS_PER_PAGE
+                }
+            });
+            setCard(response.data.cards);
+            setLoading(false);
+        } catch (error) {
+            createAlert('Failed to fetch cards._error', 5);
+            setLoading(false);
+        }
+    }, [createAlert]);
+
+    useEffect(() => {
+        fetchCards(currentPage);
+    }, [currentPage, fetchCards]);
 
     useEffect(() => {
         setFilteredOptions(card?.filter(option =>
@@ -90,6 +116,10 @@ const CardReviewPage = ({ cards, createAlert }: Props) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
+        setCurrentPage(page);
+    };
+
     const handleChange = useCallback(
         (
             _event: React.SyntheticEvent<Element, Event>,
@@ -102,21 +132,23 @@ const CardReviewPage = ({ cards, createAlert }: Props) => {
         []
     );
 
-    const confirmDelete = useCallback(() => {
+    const confirmDelete = useCallback(async () => {
         if (deleteId !== null) {
-            axiosInstance.delete(`/card/delete-card/${deleteId}`).then((res) => {
+            try {
+                const res = await axiosInstance.delete(`/card/delete-card/${deleteId}`);
                 if (res.status === 204) {
                     createAlert("Word deleted successfully!_success", 5);
+                    // Refresh the current page after deletion
+                    await fetchCards(currentPage);
                 }
-            }).catch((error) => {
+            } catch (error) {
                 createAlert('An error occurred. Please try again._error', 5);
-            });
+            }
 
-            setCard(currentItems => currentItems.filter(i => i.id !== deleteId));
             setOpenModal(false);
             setDeleteId(null);
         }
-    }, [deleteId, createAlert]);
+    }, [deleteId, createAlert, currentPage, fetchCards]);
 
     const onDeleteAction = useCallback((id: number | string) => {
         setDeleteId(id);
@@ -186,17 +218,42 @@ const CardReviewPage = ({ cards, createAlert }: Props) => {
                     fullWidth
                 />
             </div>
-            <div className='scrollable-div' style={{ overflowY: 'scroll', height: `${height - 260}px` }}>
-                {filteredOptions.map((item, index) => (
-                    <ListItemBox
-                        {...item}
-                        key={item.id}
-                        index={index}
-                        onDeleteAction={onDeleteAction}
-                        onEditAction={onEditAction}
-                    />
-                ))}
+            <div className='scrollable-div' style={{ overflowY: 'scroll', height: `${height - 320}px` }}>
+                {loading ? (
+                    <div className="text-center py-4">Loading...</div>
+                ) : (
+                    filteredOptions.map((item, index) => (
+                        <ListItemBox
+                            {...item}
+                            key={item.id}
+                            index={index}
+                            onDeleteAction={onDeleteAction}
+                            onEditAction={onEditAction}
+                        />
+                    ))
+                )}
             </div>
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, mb: 2 }}>
+                <Pagination
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={handlePageChange}
+                    color="primary"
+                    size="large"
+                    sx={{
+                        '& .MuiPaginationItem-root': {
+                            color: '#133266',
+                            '&.Mui-selected': {
+                                backgroundColor: '#133266',
+                                color: '#fff',
+                                '&:hover': {
+                                    backgroundColor: '#1a4080',
+                                },
+                            },
+                        },
+                    }}
+                />
+            </Box>
             <Modal
                 open={openModal}
                 onClose={() => setOpenModal(false)}
@@ -235,4 +292,4 @@ const CardReviewPage = ({ cards, createAlert }: Props) => {
     );
 };
 
-export default CardReviewPage;
+export default SearchPage;

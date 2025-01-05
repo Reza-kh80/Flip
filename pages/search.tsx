@@ -9,7 +9,7 @@ import { Container } from '@mui/material';
 
 // import main layer
 import Layout from '@/components/Layout';
-import CardReviewPage from '@/components/ReviewPage/CardReviewPage';
+import SearchPage from '@/components/SearchPage/SearchPage';
 
 interface Card {
     id: number;
@@ -30,9 +30,21 @@ interface Card {
     deleted_at: number | null
 }
 
+interface PaginatedResponse {
+    cards: Card[];
+    totalPages: number;
+    currentPage: number;
+    totalCards: number;
+}
+
 interface Props {
     data: {
         initialBoxes: Card[];
+        pagination: {
+            totalPages: number;
+            currentPage: number;
+            totalCards: number;
+        };
     };
     createAlert: CreateAlertFunction;
 }
@@ -45,7 +57,11 @@ const Search = ({ data, createAlert }: Props) => {
                     <h2 className='fw-bold' style={{ color: '#133266', fontSize: '35pt' }}>
                         Search
                     </h2>
-                    <CardReviewPage cards={data.initialBoxes} createAlert={createAlert} />
+                    <SearchPage
+                        cards={data.initialBoxes}
+                        createAlert={createAlert}
+                        totalPages={data.pagination.totalPages}
+                    />
                 </Container>
             </main>
         </Layout>
@@ -53,7 +69,6 @@ const Search = ({ data, createAlert }: Props) => {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
-
     try {
         const session = await getSession(context);
 
@@ -66,23 +81,34 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
             };
         }
 
-        // Pass the cookie header to maintain session in SSR
-        const response = await axiosInstance.get<Card[]>(`/card/get-all-cards`, {
+        const page = Number(context.query.page) || 1;
+        const limit = 10;
+
+        // Update the endpoint to match backend route
+        const response = await axiosInstance.get<PaginatedResponse>(`/card/get-all-cards`, {
             headers: {
                 cookie: context.req.headers.cookie || '',
             },
+            params: {
+                page,
+                limit
+            }
         });
 
         return {
             props: {
                 data: {
-                    initialBoxes: response.data
+                    initialBoxes: response.data.cards,
+                    pagination: {
+                        totalPages: response.data.totalPages,
+                        currentPage: response.data.currentPage,
+                        totalCards: response.data.totalCards
+                    }
                 }
             },
         };
     } catch (error: any) {
         if (error.response && error.response.status === 401) {
-            // Redirect to login page if unauthorized
             return {
                 redirect: {
                     destination: '/login',
@@ -93,12 +119,16 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
         return {
             props: {
                 data: {
-                    initialBoxes: []
+                    initialBoxes: [],
+                    pagination: {
+                        totalPages: 0,
+                        currentPage: 1,
+                        totalCards: 0
+                    }
                 }
             },
         };
     }
 };
-
 
 export default Search;

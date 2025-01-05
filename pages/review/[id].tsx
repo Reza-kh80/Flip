@@ -11,7 +11,7 @@ import { Container } from '@mui/material';
 
 // import main layer and other components
 import Layout from '@/components/Layout';
-import CardReviewPage from '@/components/ReviewPage/CardReviewPage';
+import ReviewPage from '@/components/ReviewPage/ReviewPage';
 
 // import SVG
 import leftSquare from '@/public/Icons/left-square.svg';
@@ -78,7 +78,7 @@ const Review = ({ data, createAlert }: Props) => {
                             <Image priority src={play} alt='play' width={32} height={32} />
                         </span>
                     </div>
-                    <CardReviewPage createAlert={createAlert} cards={data.initialBoxes} />
+                    <ReviewPage createAlert={createAlert} cards={data.initialBoxes} />
                 </Container>
             </main>
         </Layout>
