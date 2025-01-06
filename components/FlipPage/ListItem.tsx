@@ -275,7 +275,7 @@ const ListItem = ({ id, name, _count, index, created_at, onCompleteLeft, onCompl
                 </div>
                 <div className="list-item__option">
                     <div className='delete__design' id={`delete__design__${index}`}>Delete</div>
-                    <div className='fast__design' id={`fast__design__${index}`}>Quick browsing</div>
+                    <div className='fast__design' id={`fast__design__${index}`}>Quick</div>
                 </div>
             </div>
             {

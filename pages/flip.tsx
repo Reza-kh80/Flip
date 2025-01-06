@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next';
 import { Container } from '@mui/material';
 import Layout from '@/components/Layout';
-import CardHomePage from '@/components/HomePage/CardHomePage';
+import CardHomePage from '@/components/FlipPage/CardFlipPage';
 import axiosInstance from '@/helper/axiosInstance';
 import { getSession } from 'next-auth/react';
 

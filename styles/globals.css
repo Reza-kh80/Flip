@@ -364,6 +364,41 @@ h2 {
     border-color: var(--Indigo, #133266);
 }
 
+.flip-style {
+    display: flex;
+    background-color: #EFC1C4;
+    border-radius: 15px;
+    width: 100%;
+    text-decoration: none;
+    justify-content: center;
+    color: #133266;
+    font-size: 15pt;
+    padding: 25px;
+    font-weight: bolder;
+    border-top-width: 3px;
+    border-bottom-width: 6px;
+    border-style: solid;
+    border-color: var(--Indigo, #133266);
+}
+
+.hero-style {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #EFE5C1;
+    border-radius: 15px;
+    width: 100%;
+    text-decoration: none;
+    justify-content: center;
+    color: #133266;
+    padding: 25px;
+    font-weight: bolder;
+    border-top-width: 3px;
+    border-bottom-width: 6px;
+    border-style: solid;
+    border-color: var(--Indigo, #133266);
+}
+
 .preferences-style {
     display: flex;
     background-color: #EFE5C1;
