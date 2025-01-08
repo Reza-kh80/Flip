@@ -115,13 +115,13 @@ const Header = ({ createAlert }: ComponentProps) => {
                         </Avatar>
                     </Box>
                 )}
-                <Image
+                {/* <Image
                     src='/Images/Logo.webp'
                     alt="Logo"
                     width={101}
                     height={68}
                     priority
-                />
+                /> */}
             </div>
         </Fragment>
     )

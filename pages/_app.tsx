@@ -37,7 +37,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } }:
       <Head>
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <meta name="description" content="Best PWA app in the world!" />
-        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="shortcut icon" href="/Images/favicon.ico" />
         <link rel="mask-icon" href="/Images/Flipit-Logo-WB.svg" color="#FFFFFF" />
         <meta name="theme-color" content="#ffffff" />
         <link rel="apple-touch-icon" href="/Images/Flipit-Logo-WB.svg" />
